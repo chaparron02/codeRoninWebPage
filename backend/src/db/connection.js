@@ -1,0 +1,80 @@
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
+
+const TIMEOUT_MS = 3000;
+
+let memServer = null;
+const state = {
+  ready: false,
+  mode: 'none',
+  uri: null,
+  dbName: null,
+};
+
+function shouldUseMemory(uri) {
+  const manual = String(process.env.USE_MEMORY_DB || '').toLowerCase();
+  return manual === '1' || manual === 'true' || (uri || '').toLowerCase() === 'memory';
+}
+
+async function startMemory(dbName) {
+  memServer = await MongoMemoryServer.create({ instance: { dbName } });
+  const uri = memServer.getUri();
+  await mongoose.connect(uri, { dbName });
+  state.ready = true;
+  state.mode = 'memory';
+  state.uri = uri;
+  state.dbName = dbName;
+  return state;
+}
+
+export async function connectDatabase({ uri, dbName }) {
+  if (shouldUseMemory(uri)) {
+    console.warn('Starting MongoDB in-memory instance (forced).');
+    return startMemory(dbName);
+  }
+
+  try {
+    await mongoose.connect(uri, {
+      dbName,
+      serverSelectionTimeoutMS: TIMEOUT_MS,
+      connectTimeoutMS: TIMEOUT_MS,
+      socketTimeoutMS: TIMEOUT_MS,
+    });
+    state.ready = true;
+    state.mode = 'external';
+    state.uri = uri;
+    state.dbName = dbName;
+    return state;
+  } catch (err) {
+    console.warn(`No se pudo conectar a MongoDB en ${uri}. Intentando modo memoria...`);
+    try {
+      return await startMemory(dbName);
+    } catch (memErr) {
+      console.error('MongoDB en memoria también falló.');
+      throw memErr;
+    }
+  }
+}
+
+export async function disconnectDatabase() {
+  try {
+    await mongoose.disconnect();
+  } catch (err) {
+    console.error('Error al desconectar MongoDB', err);
+  }
+  if (memServer) {
+    try {
+      await memServer.stop();
+    } catch (err) {
+      console.error('Error deteniendo MongoMemoryServer', err);
+    }
+    memServer = null;
+  }
+  state.ready = false;
+  state.mode = 'none';
+}
+
+export function databaseState() {
+  const ready = state.ready && mongoose.connection.readyState === 1;
+  return { ...state, ready, connectionState: mongoose.connection.readyState };
+}
