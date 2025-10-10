@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b0f17" />
+    <title>codeRonin - Hacking y Ciberseguridad</title>
+    <meta name="description" content="codeRonin: cursos, proyectos y material de hacking/ciberseguridad con estetica ronin." />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://payhip.com; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self'; frame-src https://www.instagram.com https://www.tiktok.com https://payhip.com; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
+    <meta name="referrer" content="no-referrer" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&family=Sawarabi+Mincho&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="/assets/css/style.css" />
+  </head>
+  <body>
+    <div class="bg-brand" id="bg-brand" aria-hidden="true">
+      <div class="bg-logo"></div>
+    </div>
+    <header class="cr-header">
+      <div class="container">
+        <a class="brand" href="#/" aria-label="Ir al inicio">
+          <img src="/assets/material/logo.webp" alt="codeRonin" class="logo"/>
+          <span class="brand-text glitch" data-text="codeRonin">codeRonin</span>
+        </a>
+        <button id="nav-toggle" class="nav-toggle" aria-label="Abrir menú" aria-controls="nav-links" aria-expanded="false">☰</button>
+        <nav class="nav" id="nav-links">
+          <a href="#/" class="active">Inicio</a>
+          <a href="#/dojo">Dojo</a>
+          <a href="#/misiones">Misiones</a>
+          <a href="#/armeria">Armeria</a>
+          <a href="#/about">Nosotros</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="root"></main>
+
+    <footer class="cr-footer">
+      <div class="container">
+        <div class="footer-left">
+          <span class="brand-text">codeRonin</span>
+          <span class="divider">|</span>
+          <span class="muted">La invisibilidad no es desaparecer: es no ser detectado.</span>
+        </div>
+        <div class="footer-right">
+          <a href="#/about">Nosotros</a>
+          <a href="mailto:coderonin404@gmail.com">coderonin404@gmail.com</a>
+          <a href="https://wa.me/573054402340" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <a href="https://www.instagram.com/code_ronin?igsh=aTRrcWtmdzQxZnI0" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://www.tiktok.com/@code.ronin?_t=ZS-90Rb6qcPCVt&_r=1" target="_blank" rel="noopener noreferrer">TikTok</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="/src/app.js" defer></script>
+    <script src="/src/livereload.js" defer></script>
+  </body>
+</html>

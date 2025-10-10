@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Conferencia: Seguridad Ofensiva 101",
+    "description": "Fundamentos de pentesting, ética profesional y demostraciones controladas."
+  },
+  {
+    "name": "Caso: Endurecimiento Linux en Producción",
+    "description": "Reducción de superficie de ataque, telemetría y hardening basado en CIS."
+  },
+  {
+    "name": "Workshop: DFIR Hands-On",
+    "description": "Adquisición de evidencia, timeline, análisis de artefactos y reporte."
+  }
+]
