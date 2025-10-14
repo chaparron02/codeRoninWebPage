@@ -1,4 +1,4 @@
-// codeRonin frontend SPA (framework-less)
+﻿// codeRonin frontend SPA (framework-less)
 // Security: no eval, no inline handlers; CSP enforced via headers
 
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -208,11 +208,11 @@ function Hero() {
   const h1 = createEl('h1');
   h1.append('Aprende hacking y ciberseguridad ');
   h1.appendChild(createEl('span', { className: 'neon-red', text: 'como un ronin' }));
-  const p = createEl('p', { text: 'Laboratorios, proyectos reales, comunidad y material práctico para crecer en seguridad ofensiva y defensiva.' });
+  const p = createEl('p', { text: 'Laboratorios, proyectos reales, comunidad y material prÃ¡ctico para crecer en seguridad ofensiva y defensiva.' });
   const cta = createEl('div', { className: 'cta' });
   const btnMis = createEl('button', { className: 'btn', text: 'Ir a Misiones' });
   const btnDojo = createEl('button', { className: 'btn', text: 'Ir al Dojo' });
-  const btnArm = createEl('button', { className: 'btn', text: 'Armería' });
+  const btnArm = createEl('button', { className: 'btn', text: 'ArmerÃ­a' });
   cta.append(btnMis, btnDojo, btnArm);
   const heroVideo = createEl('div', { className: 'hero-video' });
   const video = createEl('video', { attrs: { src: '/assets/material/gif%20codeRonin.mp4', muted: '', autoplay: '', loop: '', playsinline: '' } });
@@ -224,7 +224,7 @@ function Hero() {
   section.append(container, mesh, grid);
 
   function setActive(kind) {
-    const map = { misiones: btnMis, dojo: btnDojo, armería: btnArm };
+    const map = { misiones: btnMis, dojo: btnDojo, armerÃ­a: btnArm };
     [btnMis, btnDojo, btnArm].forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
     const b = map[kind];
     if (b) { b.classList.add('active'); b.setAttribute('aria-pressed', 'true'); }
@@ -233,7 +233,7 @@ function Hero() {
   function showHeroInfo(kind) {
     const map = {
       misiones: {
-        title: 'Misiones de hacking ético',
+        title: 'Misiones de hacking Ã©tico',
         body: [
           'Desafios reales, impacto real: ejecutamos ataques controlados para revelar brechas con evidencia accionable.',
           'Transforma hallazgos en mejoras priorizadas por riesgo y mide el avance de tu seguridad en cada iteracion.'
@@ -244,20 +244,20 @@ function Hero() {
       dojo: {
         title: 'Dojo',
         body: [
-          'Forja habilidades con rutas prácticas en pentesting, redes y forense, pensadas para el dia a dia.',
+          'Forja habilidades con rutas prÃ¡cticas en pentesting, redes y forense, pensadas para el dia a dia.',
           'Aprende haciendo: labs guiados, proyectos y feedback para subir de nivel de forma consistente.'
         ],
         link: '/dojo',
         img: '/assets/material/dojo1.webp'
       },
-      armería: {
-        title: 'Armería',
+      armerÃ­a: {
+        title: 'ArmerÃ­a',
         body: [
-          'Tu kit esencial del ronin digital: guías, checklists y plantillas listas para aplicar.',
-          'Estandariza procesos, acelera entregables y evita reinventar la rueda en cada misión.'
+          'Tu kit esencial del ronin digital: guÃ­as, checklists y plantillas listas para aplicar.',
+          'Estandariza procesos, acelera entregables y evita reinventar la rueda en cada misiÃ³n.'
         ],
-        link: '/armería',
-        img: '/assets/material/armería.webp'
+        link: '/armerÃ­a',
+        img: '/assets/material/armerÃ­a.webp'
       }
     };
     const data = map[kind];
@@ -274,7 +274,7 @@ function Hero() {
     } else {
       left.appendChild(createEl('p', { text: data.body }));
     }
-    left.appendChild(createEl('div', { className: 'cta', children: [ createEl('a', { className: 'btn btn-primary', text: 'Saber más', attrs: { href: data.link } }) ] }));
+    left.appendChild(createEl('div', { className: 'cta', children: [ createEl('a', { className: 'btn btn-primary', text: 'Saber mÃ¡s', attrs: { href: data.link } }) ] }));
     const right = createEl('div');
     right.appendChild(createEl('img', { className: 'hero-decor', attrs: { src: data.img, alt: data.title, loading: 'lazy' } }));
     info.append(left, right);
@@ -283,7 +283,7 @@ function Hero() {
 
   btnMis.addEventListener('click', () => showHeroInfo('misiones'));
   btnDojo.addEventListener('click', () => showHeroInfo('dojo'));
-  btnArm.addEventListener('click', () => showHeroInfo('armería'));
+  btnArm.addEventListener('click', () => showHeroInfo('armerÃ­a'));
   return section;
 }
 
@@ -306,10 +306,10 @@ function Card({ title, desc, tags = [], cta, image }) {
 
 async function Courses() {
   const items = await getJSON('/api/courses.json', [
-    { title: 'Hacking Ético', description: 'Fundamentos y metodología de pruebas.', tags: ['pentesting','ética'] },
+    { title: 'Hacking Ã‰tico', description: 'Fundamentos y metodologÃ­a de pruebas.', tags: ['pentesting','Ã©tica'] },
     { title: 'Cybersecurity Fundamentals', description: 'Conceptos clave y control de riesgos.', tags: ['fundamentos'] },
     { title: 'Seguridad en Redes', description: 'Arquitecturas y segmentacion.', tags: ['redes'] },
-    { title: 'Análisis Forense', description: 'Adquisicion y análisis de evidencia.', tags: ['forense'] },
+    { title: 'AnÃ¡lisis Forense', description: 'Adquisicion y anÃ¡lisis de evidencia.', tags: ['forense'] },
   ]);
   const grid = createEl('div', { className: 'card-grid' });
   items.forEach(c => {
@@ -382,9 +382,9 @@ async function AchievementsSection() {
   const title = createEl('h2', { className: 'section-title', text: 'Proyectos realizados' });
   const grid = createEl('div', { className: 'card-grid' });
   const items = await getJSON('/api/achievements.json', [
-    { name: 'Conferencia: Seguridad Ofensiva 101', description: 'Charla sobre fundamentos de pentesting y ética.' },
+    { name: 'Conferencia: Seguridad Ofensiva 101', description: 'Charla sobre fundamentos de pentesting y Ã©tica.' },
     { name: 'Caso: Endurecimiento Linux', description: 'Reduccion de superficie de ataque y mejora de visibilidad en 60 dias.' },
-    { name: 'Workshop: DFIR Hands-On', description: 'Taller práctico de respuesta a incidentes con ejercicios guiados.' }
+    { name: 'Workshop: DFIR Hands-On', description: 'Taller prÃ¡ctico de respuesta a incidentes con ejercicios guiados.' }
   ]);
   items.forEach(i => grid.appendChild(Card({ title: i.name, desc: i.description, tags: i.tags || [] })));
   wrap.append(title, grid);
@@ -436,19 +436,19 @@ async function HomePage() {
     createEl('div', { className: 'cta', children: [
       createEl('a', { className: 'btn btn-primary', text: 'Ir a Misiones', attrs: { href: '/misiones' } }),
       createEl('a', { className: 'btn btn-ghost', text: 'Ir al Dojo', attrs: { href: '/dojo' } }),
-      createEl('a', { className: 'btn btn-ghost', text: 'Ir a Armería', attrs: { href: '/armería' } })
+      createEl('a', { className: 'btn btn-ghost', text: 'Ir a ArmerÃ­a', attrs: { href: '/armerÃ­a' } })
     ] })
   );
   sec2.appendChild(c2);
 
-  // Quiénes somos (ahora debajo del por quA)
+  // QuiÃ©nes somos (ahora debajo del por quA)
   const sec1 = createEl('section', { className: 'section' });
   const c1 = createEl('div', { className: 'container' });
-  c1.appendChild(createEl('h2', { className: 'section-title', text: 'Quiénes somos' }));
+  c1.appendChild(createEl('h2', { className: 'section-title', text: 'QuiÃ©nes somos' }));
   c1.appendChild(createEl('p', { text: 'codeRonin es un dojo de ciberseguridad con espAritu ronin: construimos, probamos y aprendemos con Atica y mAtodo. Unimos mentalidad ofensiva y defensiva para pensar como atacante y diseAar mejores defensas.' }));
   c1.appendChild(createEl('p', { text: 'Entrena en el Dojo (virtual/presencial), pon a prueba tus defensas con Misiones y equipa tu dAa a dAa en la ArmerAa con guAas y checklists.' }));
   const promo = createEl('div', { className: 'cta-banner' });
-  promo.appendChild(createEl('div', { text: 'Espacio para banners y promociones (próximamente).' }));
+  promo.appendChild(createEl('div', { text: 'Espacio para banners y promociones (prÃ³ximamente).' }));
   c1.appendChild(promo);
   // Social quick links
   const socials = createEl('div', { className: 'social-row' });
@@ -480,17 +480,17 @@ async function AboutPage() {
   const c = createEl('div', { className: 'container' });
   c.appendChild(createEl('h2', { className: 'section-title', text: 'Nosotros' }));
 
-  // Filosofía
-  c.appendChild(createEl('h3', { text: 'Filosofía' }));
-  c.appendChild(createEl('p', { text: 'En codeRonin formamos "ninjas digitales": disciplina, curiosidad y práctica. Operamos con ética y consentimiento en laboratorios controlados, para que pensar como atacante te ayude a diseñar mejores defensas.' }));
+  // FilosofÃ­a
+  c.appendChild(createEl('h3', { text: 'FilosofÃ­a' }));
+  c.appendChild(createEl('p', { text: 'En codeRonin formamos "ninjas digitales": disciplina, curiosidad y prÃ¡ctica. Operamos con Ã©tica y consentimiento en laboratorios controlados, para que pensar como atacante te ayude a diseÃ±ar mejores defensas.' }));
 
-  // Motivación
-  c.appendChild(createEl('h3', { text: 'Motivación' }));
+  // MotivaciÃ³n
+  c.appendChild(createEl('h3', { text: 'MotivaciÃ³n' }));
   const ulMot = createEl('ul', { className: 'list' });
   [
-    'Cerrar la brecha entre teoría y práctica con labs reproducibles.',
+    'Cerrar la brecha entre teorÃ­a y prÃ¡ctica con labs reproducibles.',
     'Elevar la cultura de seguridad con contenidos breves y accionables.',
-    'Acelerar la madurez: hardening, detección, respuesta y reporte ejecutivo.'
+    'Acelerar la madurez: hardening, detecciÃ³n, respuesta y reporte ejecutivo.'
   ].forEach(t => ulMot.appendChild(createEl('li', { text: t })));
   c.appendChild(ulMot);
 
@@ -498,9 +498,9 @@ async function AboutPage() {
   c.appendChild(createEl('h3', { text: 'Conferencias y actividades' }));
   const ulAct = createEl('ul', { className: 'list' });
   [
-    'Charlas (BSides/FLISoL): Evil Twin corporativo, DFIR exprés, Ingeniería social asistida por IA.',
+    'Charlas (BSides/FLISoL): Evil Twin corporativo, DFIR exprÃ©s, IngenierÃ­a social asistida por IA.',
     'Comunidad y contenidos: Reels/Shorts diarios, microtutoriales de Wi-Fi, phishing, logs, OSINT.',
-    'Material descargable: guías, playbooks, checklists y plantillas de reporte.'
+    'Material descargable: guÃ­as, playbooks, checklists y plantillas de reporte.'
   ].forEach(t => ulAct.appendChild(createEl('li', { text: t })));
   c.appendChild(ulAct);
   const media = createEl('div', { className: 'media-grid' });
@@ -511,15 +511,15 @@ async function AboutPage() {
   c.appendChild(createEl('h3', { text: 'Proyectos' }));
   const ulProj = createEl('ul', { className: 'list' });
   [
-    'Evil Twin en entorno controlado con matriz de mitigación.',
-    'Análisis de logs con foco en sesiones fuera de horario y artefactos remotos.',
-    'Metodología de artefactos para herramientas de control remoto (qué, dónde y por qué).'
+    'Evil Twin en entorno controlado con matriz de mitigaciÃ³n.',
+    'AnÃ¡lisis de logs con foco en sesiones fuera de horario y artefactos remotos.',
+    'MetodologÃ­a de artefactos para herramientas de control remoto (quÃ©, dÃ³nde y por quÃ©).'
   ].forEach(t => ulProj.appendChild(createEl('li', { text: t })));
   c.appendChild(ulProj);
   // Logros/cartas desde achievements.json
   c.appendChild(await AchievementsSection());
-  // CodeRonin AI (Próximamente)
-  const soon = Card({ title: 'CodeRonin AI (Próximamente)', desc: 'MVP de concientización e ingeniería social ética con IA: vishing/smishing simulados, métricas y consentimiento/auditoría. Comercialización prevista en la siguiente fase.' });
+  // CodeRonin AI (PrÃ³ximamente)
+  const soon = Card({ title: 'CodeRonin AI (PrÃ³ximamente)', desc: 'MVP de concientizaciÃ³n e ingenierÃ­a social Ã©tica con IA: vishing/smishing simulados, mÃ©tricas y consentimiento/auditorÃ­a. ComercializaciÃ³n prevista en la siguiente fase.' });
   const rowSoon = createEl('div', { className: 'badge-row' }); rowSoon.appendChild(createEl('span', { className: 'badge soon', text: 'En desarrollo' })); soon.appendChild(rowSoon);
   const gridSoon = createEl('div', { className: 'card-grid' }); gridSoon.appendChild(soon); c.appendChild(gridSoon);
 
@@ -527,9 +527,9 @@ async function AboutPage() {
   c.appendChild(createEl('h3', { text: 'Activos diferenciales' }));
   const ulFounder = createEl('ul', { className: 'list' });
   [
-    'CEH Master y experiencia aplicada en red team/DFIR orientada a formación.',
-    'Performance y magia escénica para elevar la efectividad de charlas.',
-    'Analítica y datos para instrumentar métricas y aprendizaje.',
+    'CEH Master y experiencia aplicada en red team/DFIR orientada a formaciÃ³n.',
+    'Performance y magia escÃ©nica para elevar la efectividad de charlas.',
+    'AnalÃ­tica y datos para instrumentar mÃ©tricas y aprendizaje.',
     'Narrativa "ninja digital" para impulsar la cultura de seguridad.'
   ].forEach(t => ulFounder.appendChild(createEl('li', { text: t })));
   c.appendChild(ulFounder);
@@ -586,9 +586,9 @@ async function DojoPage() {
       panels.appendChild(disc);
     } else {
       const wrap = createEl('div');
-      wrap.appendChild(createEl('div', { className: 'cta-banner', children: [ createEl('div', { text: 'Presenciales: inmersion guiada para acelerar habilidades, alinear prácticas y resolver dudas en vivo.' }) ] }));
+      wrap.appendChild(createEl('div', { className: 'cta-banner', children: [ createEl('div', { text: 'Presenciales: inmersion guiada para acelerar habilidades, alinear prÃ¡cticas y resolver dudas en vivo.' }) ] }));
       const categories = [
-        { t: 'Hacking ético', image: '/assets/material/ninja1.webp', items: [ 'Introduccion y Metodología', 'Pentesting Web', 'Pentesting Infraestructura' ] },
+        { t: 'Hacking Ã©tico', image: '/assets/material/ninja1.webp', items: [ 'Introduccion y Metodologia', 'Pentesting Web', 'Pentesting Infraestructura' ] },
         { t: 'Fundamentos', image: '/assets/material/dojo1.webp', items: [ 'Cybersecurity Fundamentals', 'Redes y Segmentacion', 'Amenazas y Riesgo' ] },
         { t: 'Capacitaciones cortas', image: '/assets/material/ninja2.webp', items: [ 'Taller OSINT', 'DFIR 101', 'DevSecOps Essentials' ] },
         { t: 'Campanas de ingenieria social', image: '/assets/material/ninja3.webp', items: [ 'Concientizacion', 'Phishing simulado', 'Reporting y metricas' ] },
@@ -600,7 +600,7 @@ async function DojoPage() {
         const grid = createEl('div', { className: 'card-grid' });
         cat.items.forEach(name => {
           const ctaBtn = createEl('a', { className: 'btn btn-sm btn-primary', text: 'Llenar formulario', attrs: { href: `/formulario?modalidad=presencial&interes=${encodeURIComponent(name)}&categoria=${encodeURIComponent(cat.t)}` } });
-          grid.appendChild(Card({ title: name, desc: 'Sesion presencial con enfoque práctico y objetivos claros para tu equipo.', tags: ['presencial'], image: cat.image, cta: ctaBtn }));
+          grid.appendChild(Card({ title: name, desc: 'Sesion presencial con enfoque practico y objetivos claros para tu equipo.', tags: ['presencial'], image: cat.image, cta: ctaBtn }));
         });
         cc.appendChild(grid);
         secCat.appendChild(cc);
@@ -625,8 +625,8 @@ async function FormPage() {
   const main = createEl('main');
   const sec = createEl('section', { className: 'section page' });
   const c = createEl('div', { className: 'container' });
-  c.appendChild(createEl('h2', { className: 'section-title', text: 'Solicitud de información' }));
-  c.appendChild(createEl('p', { text: 'Déjanos tus datos y el interés del curso/capacitación. Te contactaremos para coordinar la mejor opción.' }));
+  c.appendChild(createEl('h2', { className: 'section-title', text: 'Solicitud de informaciÃ³n' }));
+  c.appendChild(createEl('p', { text: 'DÃ©janos tus datos y el interÃ©s del curso/capacitaciÃ³n. Te contactaremos para coordinar la mejor opciÃ³n.' }));
   const qs = new URLSearchParams(location.search || '');
   const interes = qs.get('interes') || '';
   const categoria = qs.get('categoria') || '';
@@ -635,10 +635,10 @@ async function FormPage() {
   const row = (label, el) => { const r = createEl('div', { className: 'form-row' }); r.appendChild(createEl('label', { text: label })); r.appendChild(el); return r; };
   const iNombre = createEl('input', { attrs: { type: 'text', name: 'nombre', required: 'true', placeholder: 'Nombre completo' } });
   const iEmail = createEl('input', { attrs: { type: 'email', name: 'email', required: 'true', placeholder: 'correo@empresa.com' } });
-  const iEmpresa = createEl('input', { attrs: { type: 'text', name: 'empresa', placeholder: 'Empresa/Organización' } });
+  const iEmpresa = createEl('input', { attrs: { type: 'text', name: 'empresa', placeholder: 'Empresa/OrganizaciÃ³n' } });
   // InterAs como lista desplegable (cursos presenciales)
   const presCursos = [
-    'Introduccion y Metodología',
+    'Introduccion y Metodologia',
     'Pentesting Web',
     'Pentesting Infraestructura',
     'Cybersecurity Fundamentals',
@@ -652,18 +652,18 @@ async function FormPage() {
     'Reporting y metricas'
   ];
   const presCursosFixed = [
-    'Introducción y Metodología',
+    'IntroducciÃ³n y MetodologÃ­a',
     'Pentesting Web',
     'Pentesting Infraestructura',
     'Cybersecurity Fundamentals',
-    'Redes y Segmentación',
+    'Redes y SegmentaciÃ³n',
     'Amenazas y Riesgo',
     'Taller OSINT',
     'DFIR 101',
     'DevSecOps Essentials',
-    'Concientización',
+    'ConcientizaciÃ³n',
     'Phishing simulado',
-    'Reportes y métricas'
+    'Reportes y mÃ©tricas'
   ];
   const iInteres = createEl('select', { attrs: { name: 'interes', required: 'true' } });
   presCursosFixed.forEach(n => {
@@ -674,7 +674,7 @@ async function FormPage() {
 
   // Modalidad fija (no editable)
   const iModalidad = createEl('input', { attrs: { type: 'text', name: 'modalidad', value: modalidad || 'presencial', readOnly: 'true' } });
-  const iMsg = createEl('textarea', { attrs: { name: 'mensaje', rows: '4', placeholder: 'Cuéntanos objetivos y disponibilidad' } });
+  const iMsg = createEl('textarea', { attrs: { name: 'mensaje', rows: '4', placeholder: 'CuÃ©ntanos objetivos y disponibilidad' } });
   const iSubmit = createEl('button', { className: 'btn btn-primary', text: 'Enviar solicitud', attrs: { type: 'submit' } });
   form.append(
     row('Nombre', iNombre),
@@ -758,7 +758,7 @@ async function FormMisionPage() {
       const payload = Object.fromEntries(fd.entries());
       const res = await fetch('/api/forms/mission', { method: 'POST', headers: { 'content-type': 'application/json', 'accept': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) { let msg = 'No se pudo iniciar sesion'; try { const ct = (res.headers.get('content-type') || '').toLowerCase(); const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text()); msg = err?.error || err?.message || msg; } catch {} throw new Error(msg); }
-      showModal('Tu solicitud de misión fue registrada. Nuestro equipo te contactara para coordinar los siguientes pasos.', { title: 'Solicitud enviada', onClose: () => { try { form.reset(); } catch {} } });
+      showModal('Tu solicitud de misiÃ³n fue registrada. Nuestro equipo te contactara para coordinar los siguientes pasos.', { title: 'Solicitud enviada', onClose: () => { try { form.reset(); } catch {} } });
       return;
     } catch (err) {
       showModal('Hubo un error al enviar la solicitud. Intenta de nuevo.', { title: 'Error' });
@@ -798,7 +798,7 @@ async function ServicesPage() {
   );
   const call = createEl('div', { className: 'cta-banner' });
   call.appendChild(createEl('div', { text: 'Misiones: simulamos ataques reales para fortalecer tus defensas.' }));
-  call.appendChild(createEl('div', { className: 'cta', children: [ createEl('a', { className: 'btn btn-primary', text: 'Saber más', attrs: { href: '/misiones' } }) ] }));
+  call.appendChild(createEl('div', { className: 'cta', children: [ createEl('a', { className: 'btn btn-primary', text: 'Saber mÃ¡s', attrs: { href: '/misiones' } }) ] }));
   c.appendChild(call);
   c.appendChild(await Services());
   sec.appendChild(c);
@@ -812,7 +812,7 @@ async function MissionsPage() {
   const c = createEl('div', { className: 'container' });
   c.append(
     createEl('h2', { className: 'section-title', text: 'Misiones' }),
-    createEl('p', { text: 'Pon a prueba tus defensas con misiones de hacking ético: simulamos ataques reales de forma controlada para fortalecer tus controles con evidencia y priorizacion por riesgo.' })
+    createEl('p', { text: 'Pon a prueba tus defensas con misiones de hacking Ã©tico: simulamos ataques reales de forma controlada para fortalecer tus controles con evidencia y priorizacion por riesgo.' })
   );
   // Media destacado para Misiones (nuevo video/gif)
   const heroM = createEl('div', { className: 'hero-video' });
@@ -843,7 +843,7 @@ async function MissionsPage() {
     cc.appendChild(createEl('p', { text: intro }));
     const grid = createEl('div', { className: 'card-grid' });
     items.forEach(it => {
-      const href = `/form-misión?interes=${encodeURIComponent(it.title)}&categoria=${encodeURIComponent(title)}&tipo=${encodeURIComponent(catKey)}`;
+      const href = `/form-misiÃ³n?interes=${encodeURIComponent(it.title)}&categoria=${encodeURIComponent(title)}&tipo=${encodeURIComponent(catKey)}`;
       const btn = createEl('a', { className: 'btn btn-sm btn-primary', text: 'Llenar formulario', attrs: { href } });
       grid.appendChild(Card({ title: it.title, desc: it.desc, tags: it.tags || [], image: it.image, cta: btn }));
     });
@@ -859,7 +859,7 @@ async function MissionsPage() {
     { title: 'Pentesting Infraestructura', desc: 'EvaluaciA3n interna/externa, Active Directory y rutas de ataque realistas.', tags: ['red','ad'], image: '/assets/material/ninja2.webp' },
     { title: 'Pruebas de sistema operativo', desc: 'EvaluaciA3n de configuraciA3n, servicios y privilegios en Windows/Linux.', tags: ['os','hardening'], image: '/assets/material/dojo1.webp' },
     { title: 'IntrusiA3n fAsica', desc: 'Pruebas controladas de acceso fAsico, tailgating y exposiciA3n de activos.', tags: ['fisico'], image: '/assets/material/ninja4.webp' },
-    { title: 'Pruebas de redes WiaFi', desc: 'AuditorAa de WLAN, cifrados, segregaciA3n y ataques comunes (capturas/evil twin).', tags: ['wifi','802.11'], image: '/assets/material/armería.webp' },
+    { title: 'Pruebas de redes WiaFi', desc: 'AuditorAa de WLAN, cifrados, segregaciA3n y ataques comunes (capturas/evil twin).', tags: ['wifi','802.11'], image: '/assets/material/armerÃ­a.webp' },
   ];
   c.appendChild(missionSection(
     'Red Team / Seguridad ofensiva',
@@ -874,7 +874,7 @@ async function MissionsPage() {
     { title: 'GestiA3n de Vulnerabilidades', desc: 'Ciclo continuo: descubrimiento, priorizaciA3n (CVSS/EPSS), parchado y verificaciA3n.', tags: ['vulns','riesgo'], image: '/assets/material/ninja2.webp' },
     { title: 'DFIR y Respuesta a Incidentes', desc: 'Forense, contenciA3n, erradicaciA3n y mejora continua con lecciones aprendidas.', tags: ['dfir','ir'], image: '/assets/material/ninja4.webp' },
     { title: 'Threat Modeling y Arquitectura Segura', desc: 'STRIDE/ATT&CK, patrones seguros y controles por diseAo.', tags: ['arquitectura'], image: '/assets/material/ninja3.webp' },
-    { title: 'Hardening y Baselines', desc: 'Benchmarks CIS y polAticas de configuraciA3n para reducir superficie de ataque.', tags: ['cis','baseline'], image: '/assets/material/armería.webp' },
+    { title: 'Hardening y Baselines', desc: 'Benchmarks CIS y polAticas de configuraciA3n para reducir superficie de ataque.', tags: ['cis','baseline'], image: '/assets/material/armerÃ­a.webp' },
     { title: 'Seguridad en la Nube', desc: 'RevisiA3n IAM, redes y datos en AWS/Azure/GCP con hardening y monitoreo.', tags: ['cloud','iam'], image: '/assets/material/ninja1.webp' },
   ];
   c.appendChild(missionSection(
@@ -917,7 +917,7 @@ async function ResourcesPage() {
   const sec = createEl('section', { className: 'section page' });
   const c = createEl('div', { className: 'container' });
   c.append(
-    createEl('h2', { className: 'section-title', text: 'Armería' }),
+    createEl('h2', { className: 'section-title', text: 'ArmerÃ­a' }),
     createEl('p', { text: 'Instructivos, PDFs, checklists y material propio de codeRonin: tu kit esencial para planear, ejecutar y documentar.' })
   );
   // Store grid: promos + PDFs (sin embeds), solo nombre + precio; luego agregamos links
@@ -1005,9 +1005,9 @@ const routes = {
   '/': HomePage,
   'dojo': DojoPage,
   'formulario': FormPage,
-  'form-misión': FormMisionPage,
+  'form-misiÃ³n': FormMisionPage,
   'misiones': MissionsPage,
-  'armería': ResourcesPage,
+  'armerÃ­a': ResourcesPage,
   'login': LoginPage,
   'signup': SignupPage,
   'perfil': ProfilePage,
@@ -1115,7 +1115,7 @@ async function LoginPage() {
   const card = createEl('div', { className: 'card login-card' });
   const brand = createEl('div', { className: 'brand login-brand' });
   const logo = createEl('img', { className: 'logo', attrs: { src: '/assets/material/logo.webp', alt: 'codeRonin' } });
-  const title = createEl('h2', { className: 'section-title', text: 'Iniciar sesiA3n' });
+  const title = createEl('h2', { className: 'section-title', text: 'Iniciar sesion' });
   const brandText = createEl('span', { className: 'brand-text', text: 'codeRonin' });
   brand.append(logo, brandText);
   card.append(brand, title);
@@ -1642,7 +1642,7 @@ async function AdminPage() {
 async function InstructorPage() {
   const wrap = createEl('section', { className: 'section page', attrs: { id: 'clases' } });
   const c = createEl('div', { className: 'container admin-container' });
-  c.appendChild(createEl('h2', { className: 'section-title', text: 'Clases y Módulos' }));
+  c.appendChild(createEl('h2', { className: 'section-title', text: 'Clases y MÃ³dulos' }));
 
   const me = await getJSON('/api/auth/me', null);
   if (!me || !Array.isArray(me.roles) || !(me.roles.includes('gato') || me.roles.includes('sensei'))) {
@@ -1676,10 +1676,10 @@ async function InstructorPage() {
   });
 
   // Left: form to add module
-  left.append(createEl('h3', { text: 'Agregar módulo' }), createEl('p', { className: 'muted', text: 'Sube un video o define una URL y asigna el curso.' }));
+  left.append(createEl('h3', { text: 'Agregar mÃ³dulo' }), createEl('p', { className: 'muted', text: 'Sube un video o define una URL y asigna el curso.' }));
   const form = createEl('form', { className: 'cr-form' });
-  const fr1 = createEl('div', { className: 'form-row' }); fr1.append(createEl('label', { text: 'Título' })); const iTitle = createEl('input', { attrs: { type: 'text', required: '' } }); fr1.appendChild(iTitle);
-  const fr2 = createEl('div', { className: 'form-row' }); fr2.append(createEl('label', { text: 'Descripción' })); const iDesc = createEl('input', { attrs: { type: 'text' } }); fr2.appendChild(iDesc);
+  const fr1 = createEl('div', { className: 'form-row' }); fr1.append(createEl('label', { text: 'TÃ­tulo' })); const iTitle = createEl('input', { attrs: { type: 'text', required: '' } }); fr1.appendChild(iTitle);
+  const fr2 = createEl('div', { className: 'form-row' }); fr2.append(createEl('label', { text: 'DescripciÃ³n' })); const iDesc = createEl('input', { attrs: { type: 'text' } }); fr2.appendChild(iDesc);
   const fr3 = createEl('div', { className: 'form-row' }); fr3.append(createEl('label', { text: 'Orden' })); const iOrder = createEl('input', { attrs: { type: 'number', value: '0' } }); fr3.appendChild(iOrder);
   const fr4 = createEl('div', { className: 'form-row' }); fr4.append(createEl('label', { text: 'Video (archivo)' })); const iFile = createEl('input', { attrs: { type: 'file', accept: 'video/*' } }); fr4.appendChild(iFile);
   const fr5 = createEl('div', { className: 'form-row' }); fr5.append(createEl('label', { text: 'o URL de video' })); const iUrl = createEl('input', { attrs: { type: 'url', placeholder: 'https://...' } }); fr5.appendChild(iUrl);
@@ -1703,7 +1703,7 @@ async function InstructorPage() {
       const tdAct = createEl('td');
       const del = createEl('button', { className: 'btn', text: 'Eliminar' });
       del.addEventListener('click', async () => {
-        if (!confirm('Eliminar módulo?')) return;
+        if (!confirm('Eliminar mÃ³dulo?')) return;
         const token = getToken();
         await fetch(`/api/instructor/courses/modules/${encodeURIComponent(m.id)}`, { method: 'DELETE', headers: token ? { authorization: `Bearer ${token}` } : {} });
         await listModules(course);
@@ -1742,6 +1742,15 @@ async function InstructorPage() {
   wrap.appendChild(c);
   return wrap;
 }
+
+
+
+
+
+
+
+
+
 
 
 
