@@ -106,14 +106,14 @@ const server = http.createServer((req, res) => {
     req.on('close', () => clients.delete(client));
     return;
   }
-  // Only GET/HEAD allowed in dev server
-  if (!['GET', 'HEAD'].includes(req.method)) {
-    return send(res, 405, 'Method Not Allowed');
-  }
-
   // API proxy to backend to keep same-origin and satisfy CSP
   if (req.url.startsWith('/api')) {
     return proxyApi(req, res);
+  }
+
+  // Only GET/HEAD allowed for static assets and pages
+  if (!['GET', 'HEAD'].includes(req.method)) {
+    return send(res, 405, 'Method Not Allowed');
   }
 
   let urlPath = req.url.split('?')[0];

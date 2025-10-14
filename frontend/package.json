@@ -2,12 +2,12 @@
   "name": "coderonin-frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Frontend SPA for codeRonin — hacking & cybersecurity dojo",
+  "description": "Frontend SPA for codeRonin - hacking & cybersecurity dojo",
   "scripts": {
-    "start": "node server.js",
-    "serve": "node server.js"
+    "start": "node -e \"console.log('Servidor provisional desactivado. Inicia el backend desde la raiz con: npm start');\"",
+    "serve:dev": "node server.js"
   },
-  "keywords": ["cybersecurity","hacking","dojo","frontend"],
+  "keywords": ["cybersecurity", "hacking", "dojo", "frontend"],
   "license": "UNLICENSED"
 }
 
