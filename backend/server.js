@@ -22,8 +22,9 @@ async function bootstrap() {
 
     server.listen(PORT, () => {
       console.log(`codeRonin API ready on http://localhost:${PORT}`);
-      if (databaseState().mode === 'memory') {
-        console.log('Using in-memory MongoDB fallback.');
+      const db = databaseState();
+      if (!db.ready || db.mode !== 'external') {
+        console.warn('Database is not ready or not external.');
       }
     });
 
