@@ -13,15 +13,15 @@ export const router = Router();
 
 // Defaults (se guardan la primera vez que se consultan si decides usarlos)
 const DEFAULT_COURSES = [
-  { title: 'Hacking Etico', description: 'Fundamentos y metodología de pruebas.', tags: ['pentesting','etica'] },
+  { title: 'Hacking Etico', description: 'Fundamentos y metodologia de pruebas.', tags: ['pentesting','etica'] },
   { title: 'Cybersecurity Fundamentals', description: 'Conceptos clave y control de riesgos.', tags: ['fundamentos'] },
-  { title: 'Seguridad en Redes', description: 'Arquitecturas y segmentación.', tags: ['redes'] },
-  { title: 'Analisis Forense', description: 'Adquisición y análisis de evidencia.', tags: ['forense'] },
+  { title: 'Seguridad en Redes', description: 'Arquitecturas y segmentacion.', tags: ['redes'] },
+  { title: 'Analisis Forense', description: 'Adquisicion y analisis de evidencia.', tags: ['forense'] },
 ];
 
 const DEFAULT_SERVICES = [
-  { title: 'Pentesting Web', description: 'Evaluación OWASP, reporte y remediación.', tags: ['owasp','web'] },
-  { title: 'Hardening y Auditoría', description: 'Endurecimiento de sistemas.', tags: ['infra','linux'] },
+  { title: 'Pentesting Web', description: 'Evaluacion OWASP, reporte y remediacion.', tags: ['owasp','web'] },
+  { title: 'Hardening y Auditoria', description: 'Endurecimiento de sistemas.', tags: ['infra','linux'] },
 ];
 
 const DEFAULT_PROJECTS = [
@@ -34,7 +34,7 @@ const DEFAULT_PROJECTS = [
   },
   {
     name: 'DFIR Playbook',
-    description: 'Guías y scripts para respuesta a incidentes.',
+    description: 'Guias y scripts para respuesta a incidentes.',
     tags: ['dfir','scripts'],
     repoUrl: 'https://github.com/your-org/dfir-playbook',
     demoUrl: ''
@@ -42,9 +42,9 @@ const DEFAULT_PROJECTS = [
 ];
 
 const DEFAULT_ACHIEVEMENTS = [
-  { name: 'Conferencia: Seguridad Ofensiva 101', description: 'Charla sobre fundamentos de pentesting y ética.' },
-  { name: 'Caso: Endurecimiento Linux', description: 'Reducción de superficie de ataque y mejora de visibilidad en 60 días.' },
-  { name: 'Workshop: DFIR Hands-On', description: 'Taller práctico de respuesta a incidentes con ejercicios guiados.' },
+  { name: 'Conferencia: Seguridad Ofensiva 101', description: 'Charla sobre fundamentos de pentesting y etica.' },
+  { name: 'Caso: Endurecimiento Linux', description: 'Reduccion de superficie de ataque y mejora de visibilidad en 60 dias.' },
+  { name: 'Workshop: DFIR Hands-On', description: 'Taller practico de respuesta a incidentes con ejercicios guiados.' },
 ];
 
 router.get('/courses.json', async (_req, res) => {

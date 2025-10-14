@@ -8,6 +8,9 @@ import { fileURLToPath } from 'url';
 import { router as apiRouter } from './routes/api.js';
 import { router as healthRouter } from './routes/health.js';
 import { formsApiRouter, formsWebRouter } from './routes/forms.js';
+import { router as authRouter } from './routes/auth.js';
+import { router as userRouter } from './routes/user.js';
+import { router as adminRouter } from './routes/admin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,11 +31,22 @@ export function createApp() {
 
   // API first, so static files under /frontend/public/api no shadow backend endpoints
   app.use('/api/health', healthRouter);
+  app.use('/api/auth', authRouter);
+  app.use('/api/user', userRouter);
+  app.use('/api/admin', adminRouter);
   app.use('/api/forms', formsApiRouter);
   app.use('/api', apiRouter);
 
   // Web form fallbacks (non-API endpoints)
   app.use(formsWebRouter);
+
+  // Direct SPA routes -> serve index.html (no hash routing)
+  const indexPath = path.join(FRONTEND_DIR, 'index.html');
+  const spaRoutes = ['/','/login','/signup','/admin','/dojo','/misiones','/armeria','/about','/formulario','/form-mision','/perfil','/profile','/recursos','/servicios','/cursos','/projects','/contact'];
+  app.get(spaRoutes, (_req, res) => {
+    if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
+    res.status(404).end();
+  });
 
   // Static assets
   app.use('/material', express.static(MATERIAL_DIR));

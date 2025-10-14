@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CourseInquiry, MissionInquiry } from '../models/inquiry.js';
+import { requireAdmin } from '../utils/auth.js';
 
 export const formsApiRouter = Router();
 export const formsWebRouter = Router();
@@ -36,12 +37,12 @@ formsApiRouter.post('/course', async (req, res) => {
   }
 });
 
-formsApiRouter.get('/course', async (_req, res) => {
+formsApiRouter.get('/course', requireAdmin, async (_req, res) => {
   const list = await CourseInquiry.find().sort({ createdAt: -1 }).lean();
   res.json(list);
 });
 
-formsApiRouter.get('/course.csv', async (_req, res) => {
+formsApiRouter.get('/course.csv', requireAdmin, async (_req, res) => {
   const list = await CourseInquiry.find().sort({ createdAt: -1 }).lean();
   const headers = [
     { key: 'createdAt', label: 'createdAt' },
@@ -72,12 +73,12 @@ formsApiRouter.post('/mission', async (req, res) => {
   }
 });
 
-formsApiRouter.get('/mission', async (_req, res) => {
+formsApiRouter.get('/mission', requireAdmin, async (_req, res) => {
   const list = await MissionInquiry.find().sort({ createdAt: -1 }).lean();
   res.json(list);
 });
 
-formsApiRouter.get('/mission.csv', async (_req, res) => {
+formsApiRouter.get('/mission.csv', requireAdmin, async (_req, res) => {
   const list = await MissionInquiry.find().sort({ createdAt: -1 }).lean();
   const headers = [
     { key: 'createdAt', label: 'createdAt' },
@@ -117,7 +118,7 @@ formsWebRouter.post('/form/submit', async (req, res) => {
     data.userAgent = req.headers['user-agent'] || '';
     data.ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
     await CourseInquiry.create(data);
-    res.status(200).send('<!doctype html><meta charset="utf-8"><title>Solicitud registrada</title><p>Solicitud registrada. Puedes cerrar esta pestaña.</p><p><a href="/">Volver al inicio</a></p>');
+    res.status(200).send('<!doctype html><meta charset="utf-8"><title>Solicitud registrada</title><p>Solicitud registrada. Puedes cerrar esta pestana.</p><p><a href="/">Volver al inicio</a></p>');
   } catch (err) {
     res.status(400).send('<!doctype html><meta charset="utf-8"><title>Error</title><p>No se pudo registrar tu solicitud.</p>');
   }
@@ -129,9 +130,8 @@ formsWebRouter.post('/mission/submit', async (req, res) => {
     data.userAgent = req.headers['user-agent'] || '';
     data.ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
     await MissionInquiry.create(data);
-    res.status(200).send('<!doctype html><meta charset="utf-8"><title>Solicitud registrada</title><p>Solicitud de misión registrada. Puedes cerrar esta pestaña.</p><p><a href="/">Volver al inicio</a></p>');
+    res.status(200).send('<!doctype html><meta charset="utf-8"><title>Solicitud registrada</title><p>Solicitud de mision registrada. Puedes cerrar esta pestana.</p><p><a href="/">Volver al inicio</a></p>');
   } catch (err) {
-    res.status(400).send('<!doctype html><meta charset="utf-8"><title>Error</title><p>No se pudo registrar tu solicitud de misión.</p>');
+    res.status(400).send('<!doctype html><meta charset="utf-8"><title>Error</title><p>No se pudo registrar tu solicitud de mision.</p>');
   }
 });
-

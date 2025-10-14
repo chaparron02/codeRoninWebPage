@@ -1,6 +1,6 @@
 codeRonin - Frontend + Backend
 
-Base del sitio con frontend estatico (SPA sin framework) y backend Express con endpoints JSON y soporte opcional para MongoDB (con fallback en memoria).
+Base del sitio con frontend estatico (SPA sin framework) y backend Express con endpoints JSON y MongoDB (sin fallback).
 
 Estructura
 - frontend/public: HTML + CSS + JS (SPA sin build)
@@ -11,7 +11,7 @@ Estructura
 
 Requisitos
 - Node.js 18+
-- MongoDB local o URI (opcional; si falla usa MongoDB en memoria)
+- MongoDB local o URI (requerido)
 
 Instalacion
 1) Instala dependencias
@@ -24,8 +24,8 @@ Instalacion
    npm run dev
    Backend + Frontend: http://localhost:8085
 
-Opcional: servidor de frontend en desarrollo
-- Ejecuta: node frontend/server.js
+Opcional: servidor de frontend en desarrollo (provisional desactivado por defecto)
+- Ejecuta: npm run serve:dev --workspace frontend  (o node frontend/server.js)
 - Proxy `/api` hacia el backend usando la misma origin (CSP friendly). Cambia el destino con `BACKEND_URL`.
   Ejemplo: BACKEND_URL=http://localhost:8085 node frontend/server.js
 
@@ -45,4 +45,3 @@ Proximos pasos sugeridos
 - Reemplazar SPA sin build por Vite/webpack si se desea pipeline de build.
 - Anadir modelos reales y CRUD sobre MongoDB para contenido dinamico.
 - Despliegue en un servicio gestionado (MongoDB Atlas + Render/Vercel/Fly/Heroku).
-
