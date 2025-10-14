@@ -76,25 +76,22 @@ async function updateAuthNav() {
   const existing = nav.querySelector('a[data-id="nav-admin"]');
   const loginLink = nav.querySelector('a[data-id="nav-login"]');
   const profileLink = nav.querySelector('a[data-id="nav-profile"]');
-  const isAdmin = !!(me && me.role === 'admin');
+  const isAdmin = !!(me && Array.isArray(me.roles) && me.roles.includes('gato'));
   // Update user chip
   try {
     const chip = document.getElementById('user-chip');
     if (chip) {
       chip.innerHTML = '';
-      const label = me && me.username ? (me.displayName || me.username) : '';
+      const label = me && me.username ? me.username : '';
       if (label) {
-        const a = document.createElement('a');
-        a.href = '/perfil';
-        a.textContent = label;
-        a.className = 'user-link';
-        const caret = document.createElement('button');
-        caret.type = 'button';
-        caret.className = 'user-caret';
-        caret.setAttribute('aria-label', 'Abrir menu de usuario');
-        caret.textContent = '';
-        caret.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleUserMenu(caret); });
-        chip.append(a, caret);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'user-button';
+        btn.textContent = label;
+        btn.setAttribute('aria-label', 'Abrir menu de usuario');
+        btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleUserMenu(btn); });
+        btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUserMenu(btn); } });
+        chip.appendChild(btn);
       }
     }
   } catch {}
@@ -1135,10 +1132,10 @@ async function LoginPage() {
   form.append(fg1, fg2, actions);
   card.appendChild(form);
 
-  // If already logged-in admin, go to admin
+  // If already logged-in admin (gato), go to admin
   try {
     const me = await getJSON('/api/auth/me', null);
-    if (me && me.role === 'admin') {
+    if (me && Array.isArray(me.roles) && me.roles.includes('gato')) {
       navigate('/admin');
     }
   } catch {}
@@ -1160,7 +1157,7 @@ async function LoginPage() {
       const data = await res.json();
       try { localStorage.setItem('cr_last_username', String(user.value || '')); } catch {}
       setToken(data.token || '');
-      if (data?.user?.role === 'admin') {
+      if (data?.user?.roles && Array.isArray(data.user.roles) && data.user.roles.includes('gato')) {
         navigate('/admin');
       } else {
         navigate('/');
@@ -1187,6 +1184,7 @@ async function ProfilePage() {
   if (!me || !me.username) { navigate('/login', { replace: true }); return wrap; }
 
   const prof = await getJSON('/api/user/profile', { username: '', name: '', email: '', phone: '', avatarUrl: '' });
+  const roles = Array.isArray(prof.roles) ? prof.roles : [];
   const card = createEl('div', { className: 'card' });
   const row = createEl('div', { className: 'profile-row' });
   const avatar = createEl('img', { attrs: { src: prof.avatarUrl || '/assets/material/logo.webp', alt: 'avatar', width: '96', height: '96' }, className: 'avatar' });
@@ -1213,9 +1211,18 @@ async function ProfilePage() {
   });
 
   const form = createEl('form', { className: 'cr-form', attrs: { autocomplete: 'off' } });
+  // Roles (read-only badges)
+  if (roles && roles.length) {
+    const badges = createEl('div', { className: 'badge-row' });
+    roles.forEach(r => {
+      const label = (r === 'gato') ? 'sensei' : r;
+      badges.appendChild(createEl('span', { className: 'badge', text: label }));
+    });
+    c.appendChild(badges);
+  }
   const r1 = createEl('div', { className: 'form-row' });
   r1.append(createEl('label', { text: 'Nombre' }));
-  const iName = createEl('input', { attrs: { type: 'text', value: prof.name || me.displayName || '' } });
+  const iName = createEl('input', { attrs: { type: 'text', value: prof.name || '' } });
   r1.appendChild(iName);
   const r2 = createEl('div', { className: 'form-row' });
   r2.append(createEl('label', { text: 'Usuario' }));
@@ -1362,11 +1369,11 @@ async function AdminPage() {
   const token = getToken();
   let me = null;
   if (token) me = await getJSON('/api/auth/me', null);
-  if (!me || me.role !== 'admin') { navigate('/login', { replace: true }); return wrap; }
+  if (!me || !Array.isArray(me.roles) || !me.roles.includes('gato')) { navigate('/login', { replace: true }); return wrap; }
 
   // Logged in: visor
   const top = createEl('div', { className: 'badge-row' });
-  top.appendChild(createEl('span', { className: 'badge', text: `Usuario: ${me.displayName || me.username}` }));
+  top.appendChild(createEl('span', { className: 'badge', text: `Usuario: ${me.username}` }));
   const logout = createEl('button', { className: 'btn', text: 'Salir' });
   logout.addEventListener('click', async () => {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
@@ -1573,14 +1580,31 @@ async function AdminPage() {
     const uWrap = createEl('div', { className: 'table-wrap' }); const uTable = createEl('table', { className: 'table users-table' }); uWrap.appendChild(uTable);
     rightPane.appendChild(uWrap);
     const users = await getJSON('/api/admin/users', []);
-    const thead = createEl('thead'); const trh = createEl('tr'); ['usuario','rol','activo','creado'].forEach(h => trh.appendChild(createEl('th',{text:h}))); thead.appendChild(trh);
+    const thead = createEl('thead'); const trh = createEl('tr'); ['usuario','roles','activo','creado'].forEach(h => trh.appendChild(createEl('th',{text:h}))); thead.appendChild(trh);
     const tbody = createEl('tbody');
     (users||[]).forEach(u => {
       const tr = createEl('tr');
       tr.appendChild(createEl('td', { text: u.username }));
-      const tdRole = createEl('td'); const sel = document.createElement('select'); ['user','admin'].forEach(r=>{const o=document.createElement('option'); o.value=r; o.textContent=r; if(u.role===r) o.selected=true; sel.appendChild(o);});
-      sel.addEventListener('change', async () => { const token = getToken(); const headers = { 'content-type': 'application/json' }; if (token) headers['authorization'] = `Bearer ${token}`; await fetch(`/api/admin/users/${u._id}/role`, { method: 'PUT', headers, body: JSON.stringify({ role: sel.value }) }); });
-      tdRole.appendChild(sel); tr.appendChild(tdRole);
+      const tdRole = createEl('td');
+      const roleKeys = ['genin','shinobi','gato'];
+      const roleLabels = { genin: 'genin', shinobi: 'shinobi', gato: 'sensei' };
+      const current = Array.isArray(u.roles) ? new Set(u.roles) : new Set();
+      roleKeys.forEach(rk => {
+        const label = document.createElement('label');
+        label.style.marginRight = '8px';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = current.has(rk);
+        cb.addEventListener('change', async () => {
+          try {
+            const roles = roleKeys.filter(k => (k===rk ? cb.checked : current.has(k)));
+            const token = getToken(); const headers = { 'content-type': 'application/json' }; if (token) headers['authorization'] = `Bearer ${token}`;
+            const res = await fetch(`/api/admin/users/${u._id}/roles`, { method: 'PUT', headers, body: JSON.stringify({ roles }) });
+            if (res.ok) { const j = await res.json(); current.clear(); (j.roles||[]).forEach(x=>current.add(x)); }
+          } catch {}
+        });
+        label.append(cb, document.createTextNode(' '+roleLabels[rk]));
+        tdRole.appendChild(label);
+      });
+      tr.appendChild(tdRole);
       const tdAct = createEl('td'); const btnT = createEl('button', { className: 'btn', text: u.active ? 'Desactivar' : 'Activar' });
       btnT.addEventListener('click', async () => { const token = getToken(); const r = await fetch(`/api/admin/users/${u._id}/toggle-active`, { method: 'PUT', headers: token ? { authorization: `Bearer ${token}` } : {} }); const j = await r.json(); btnT.textContent = (j.active ? 'Desactivar' : 'Activar'); });
       tdAct.appendChild(btnT); tr.appendChild(tdAct);

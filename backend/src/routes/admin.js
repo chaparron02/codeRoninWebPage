@@ -125,24 +125,56 @@ router.delete('/courses/modules/:id', async (req, res) => {
 router.get('/users', async (_req, res) => {
   try {
     const users = await User.find({}, { passwordHash: 0 }).sort({ createdAt: -1 }).lean();
-    res.json(users);
+    const mapped = users.map(u => ({
+      ...u,
+      roles: (Array.isArray(u.roles) && u.roles.length) ? u.roles : (u.role === 'admin' ? ['gato'] : (u.role ? ['genin'] : [])),
+    }));
+    res.json(mapped);
   } catch (err) {
     res.status(500).json({ error: 'No se pudieron obtener usuarios' });
   }
 });
 
 router.put('/users/:id/role', async (req, res) => {
+  // Backward-compatible: if role provided as 'admin' or 'user', map to roles array
   try {
     const { id } = req.params;
     const { role } = req.body || {};
-    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rol invalido' });
+    if (!role) return res.status(400).json({ error: 'Rol requerido' });
     const u = await User.findById(id).exec();
     if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
-    u.role = role;
+    // map legacy
+    if (role === 'admin') {
+      u.role = 'admin';
+      u.roles = Array.isArray(u.roles) ? Array.from(new Set([...u.roles, 'gato'])) : ['gato'];
+    } else if (role === 'user') {
+      u.role = 'user';
+      if (!Array.isArray(u.roles) || u.roles.length === 0) u.roles = ['genin'];
+    } else {
+      return res.status(400).json({ error: 'Rol invalido' });
+    }
     await u.save();
-    res.json({ ok: true });
+    res.json({ ok: true, roles: u.roles });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo actualizar el rol' });
+  }
+});
+
+router.put('/users/:id/roles', async (req, res) => {
+  try {
+    const { id } = req.params;
+    let { roles } = req.body || {};
+    if (!Array.isArray(roles)) return res.status(400).json({ error: 'roles debe ser un array' });
+    roles = roles.filter(r => ['gato','shinobi','genin'].includes(r));
+    const u = await User.findById(id).exec();
+    if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
+    u.roles = Array.from(new Set(roles));
+    // optional legacy sync
+    if (u.roles.includes('gato')) u.role = 'admin'; else u.role = 'user';
+    await u.save();
+    res.json({ ok: true, roles: u.roles });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudieron actualizar roles' });
   }
 });
 

@@ -33,7 +33,7 @@ router.get('/profile', requireAuth, async (req, res) => {
       displayName: u.displayName || u.name || '',
       email: u.email || '',
       phone: u.phone || '',
-      role: u.role,
+      roles: (Array.isArray(u.roles) && u.roles.length) ? u.roles : (u.role === 'admin' ? ['gato'] : (u.role ? ['genin'] : [])),
       avatarUrl: u.avatarUrl || '',
     });
   } catch (err) {
@@ -86,4 +86,3 @@ router.post('/avatar', requireAuth, async (req, res) => {
     res.status(500).json({ error: 'No se pudo actualizar el avatar' });
   }
 });
-

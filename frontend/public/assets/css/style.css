@@ -94,10 +94,8 @@ body::after {
 .user-menu a, .user-menu button { appearance: none; border: none; text-align: left; background: transparent; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
 .user-menu a:hover, .user-menu button:hover { background: rgba(255,255,255,0.05); }
 .user-menu .menu-danger { color: var(--red); }
-.user-link { color: var(--text); text-decoration: none; margin-right: 6px; }
-.user-link:hover { color: var(--cyan); }
-.user-caret { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); padding: 2px 6px; border-radius: 6px; cursor: pointer; }
-.user-caret:hover { background: rgba(255,255,255,0.1); }
+.user-button { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 999px; cursor: pointer; font-weight: 600; }
+.user-button:hover { background: rgba(255,255,255,0.12); }
 
 /* Mobile nav */
 .nav-toggle { display: none; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 8px; }
