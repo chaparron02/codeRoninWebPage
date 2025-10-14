@@ -518,13 +518,22 @@ async function FormPage() {
     row('Empresa', iEmpresa),
     row('Interes', iInteres),
     row('Modalidad', iModalidad),
-    row('Mensaje', iMsg),
-    createEl('div', { className: 'cta', children: [ iSubmit ] })
+  row('Mensaje', iMsg),
+  createEl('div', { className: 'cta', children: [ iSubmit ] })
   );
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const ok = createEl('div', { className: 'cta-banner', children: [ createEl('div', { text: 'Solicitud registrada. Pronto nos comunicaremos contigo.' }) ] });
-    form.replaceWith(ok);
+  form.addEventListener('submit', async (e) => {
+    // e.preventDefault(); // allow server-side form submit to backend
+    try {
+      const fd = new FormData(form);
+      const payload = Object.fromEntries(fd.entries());
+      const res = await fetch('/api/forms/course', { method: 'POST', headers: { 'content-type': 'application/json', 'accept': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error('bad status');
+      const ok = createEl('div', { className: 'cta-banner', children: [ createEl('div', { text: 'Solicitud registrada. Pronto nos comunicaremos contigo.' }) ] });
+      form.replaceWith(ok);
+    } catch (err) {
+      const errBox = createEl('div', { className: 'cta-banner', children: [ createEl('div', { text: 'Hubo un error al enviar. Intenta de nuevo.' }) ] });
+      form.replaceWith(errBox);
+    }
   });
   c.appendChild(form);
   sec.appendChild(c);
@@ -581,7 +590,7 @@ async function FormMisionPage() {
     createEl('div', { className: 'cta', children: [ iSubmit ] })
   );
   form.addEventListener('submit', (e) => {
-    e.preventDefault();
+    // e.preventDefault(); // allow server-side form submit to backend
     const ok = createEl('div', { className: 'cta-banner', children: [ createEl('div', { text: 'Solicitud registrada. Nuestro equipo te contactará para coordinar la misión.' }) ] });
     form.replaceWith(ok);
   });

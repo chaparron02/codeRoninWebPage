@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 
 import { router as apiRouter } from './routes/api.js';
 import { router as healthRouter } from './routes/health.js';
+import { formsApiRouter, formsWebRouter } from './routes/forms.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +28,11 @@ export function createApp() {
 
   // API first, so static files under /frontend/public/api no shadow backend endpoints
   app.use('/api/health', healthRouter);
+  app.use('/api/forms', formsApiRouter);
   app.use('/api', apiRouter);
+
+  // Web form fallbacks (non-API endpoints)
+  app.use(formsWebRouter);
 
   // Static assets
   app.use('/material', express.static(MATERIAL_DIR));
