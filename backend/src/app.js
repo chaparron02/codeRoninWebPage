@@ -25,11 +25,13 @@ export function createApp() {
     fs.mkdirSync(MATERIAL_DIR, { recursive: true });
   }
 
-  app.use('/material', express.static(MATERIAL_DIR));
-  app.use(express.static(FRONTEND_DIR));
-
+  // API first, so static files under /frontend/public/api no shadow backend endpoints
   app.use('/api/health', healthRouter);
   app.use('/api', apiRouter);
+
+  // Static assets
+  app.use('/material', express.static(MATERIAL_DIR));
+  app.use(express.static(FRONTEND_DIR));
 
   app.use((req, res, next) => {
     if (!req.path.startsWith('/api')) {

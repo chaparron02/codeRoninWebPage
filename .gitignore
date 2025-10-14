@@ -52,3 +52,7 @@ out/
 *.key
 *.crt
 frontend/CON
+
+### Local JSON data store
+backend/src/memory/*
+!backend/src/memory/.gitkeep

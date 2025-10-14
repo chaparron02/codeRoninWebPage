@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readJSON, writeJSON } from '../storage/fileStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,20 +11,20 @@ const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
 
 export const router = Router();
 
-// In-memory sample data. Replace with DB or files later if needed.
-const courses = [
+// Defaults (se guardan la primera vez que se consultan si decides usarlos)
+const DEFAULT_COURSES = [
   { title: 'Hacking Etico', description: 'Fundamentos y metodología de pruebas.', tags: ['pentesting','etica'] },
   { title: 'Cybersecurity Fundamentals', description: 'Conceptos clave y control de riesgos.', tags: ['fundamentos'] },
   { title: 'Seguridad en Redes', description: 'Arquitecturas y segmentación.', tags: ['redes'] },
   { title: 'Analisis Forense', description: 'Adquisición y análisis de evidencia.', tags: ['forense'] },
 ];
 
-const services = [
+const DEFAULT_SERVICES = [
   { title: 'Pentesting Web', description: 'Evaluación OWASP, reporte y remediación.', tags: ['owasp','web'] },
   { title: 'Hardening y Auditoría', description: 'Endurecimiento de sistemas.', tags: ['infra','linux'] },
 ];
 
-const projects = [
+const DEFAULT_PROJECTS = [
   {
     name: 'Recon Toolkit',
     description: 'Suite para reconocimiento ofensivo en entornos web.',
@@ -40,26 +41,54 @@ const projects = [
   }
 ];
 
-const achievements = [
+const DEFAULT_ACHIEVEMENTS = [
   { name: 'Conferencia: Seguridad Ofensiva 101', description: 'Charla sobre fundamentos de pentesting y ética.' },
   { name: 'Caso: Endurecimiento Linux', description: 'Reducción de superficie de ataque y mejora de visibilidad en 60 días.' },
   { name: 'Workshop: DFIR Hands-On', description: 'Taller práctico de respuesta a incidentes con ejercicios guiados.' },
 ];
 
-router.get('/courses.json', (_req, res) => {
-  res.json(courses);
+router.get('/courses.json', async (_req, res) => {
+  const data = await readJSON('courses.json', DEFAULT_COURSES);
+  res.json(data);
 });
 
-router.get('/services.json', (_req, res) => {
-  res.json(services);
+router.post('/courses.json', async (req, res) => {
+  if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Se espera un array' });
+  await writeJSON('courses.json', req.body);
+  res.status(204).end();
 });
 
-router.get('/projects.json', (_req, res) => {
-  res.json(projects);
+router.get('/services.json', async (_req, res) => {
+  const data = await readJSON('services.json', DEFAULT_SERVICES);
+  res.json(data);
 });
 
-router.get('/achievements.json', (_req, res) => {
-  res.json(achievements);
+router.post('/services.json', async (req, res) => {
+  if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Se espera un array' });
+  await writeJSON('services.json', req.body);
+  res.status(204).end();
+});
+
+router.get('/projects.json', async (_req, res) => {
+  const data = await readJSON('projects.json', DEFAULT_PROJECTS);
+  res.json(data);
+});
+
+router.post('/projects.json', async (req, res) => {
+  if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Se espera un array' });
+  await writeJSON('projects.json', req.body);
+  res.status(204).end();
+});
+
+router.get('/achievements.json', async (_req, res) => {
+  const data = await readJSON('achievements.json', DEFAULT_ACHIEVEMENTS);
+  res.json(data);
+});
+
+router.post('/achievements.json', async (req, res) => {
+  if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Se espera un array' });
+  await writeJSON('achievements.json', req.body);
+  res.status(204).end();
 });
 
 router.get('/pdfs.json', (_req, res) => {
