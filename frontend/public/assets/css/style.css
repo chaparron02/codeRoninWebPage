@@ -166,6 +166,10 @@ body::after {
 .card p { margin: 0; color: var(--muted); }
 .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .badge { font-size: 12px; color: var(--cyan); background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.25); padding: 2px 8px; border-radius: 999px; }
+.badge.role-shogun { color: #fff; background: linear-gradient(135deg, var(--red), var(--purple)); border: none; }
+.badge.role-sensei { color: #fff; background: linear-gradient(135deg, var(--blue), var(--purple)); border: none; }
+.badge.role-shinobi { color: var(--text); background: rgba(0,231,255,0.12); border-color: rgba(0,231,255,0.4); }
+.badge.role-genin { color: var(--muted); background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
 .badge.price { color: #fff; background: linear-gradient(135deg, var(--red), var(--purple)); border: none; }
 .badge.soon { color: #fff; background: linear-gradient(135deg, var(--purple), var(--blue)); border: none; }
 .card a.btn-sm { display: inline-block; margin-top: 12px; font-size: 13px; padding: 6px 10px; }
