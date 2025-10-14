@@ -9,7 +9,8 @@ dotenv.config();
 
 const PORT = Number(process.env.PORT || 8085);
 const DB_NAME = process.env.MONGODB_DB || 'coderonin';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/coderonin';
+// Use host-only URI by default; db is provided via DB_NAME
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
 
 async function bootstrap() {
   try {
