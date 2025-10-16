@@ -235,8 +235,8 @@ function Hero() {
       misiones: {
         title: 'Misiones de hacking ético',
         body: [
-          'Desafios reales, impacto real: ejecutamos ataques controlados para revelar brechas con evidencia accionable.',
-          'Transforma hallazgos en mejoras priorizadas por riesgo y mide el avance de tu seguridad en cada iteracion.'
+          'Desafíos reales, impacto real: ejecutamos ataques controlados para revelar brechas con evidencia accionable.',
+          'Transforma hallazgos en mejoras priorizadas por riesgo y mide el avance de tu seguridad en cada iteración.'
         ],
         link: '/misiones',
         img: '/assets/material/ninja1.webp'
@@ -244,7 +244,7 @@ function Hero() {
       dojo: {
         title: 'Dojo',
         body: [
-          'Forja habilidades con rutas prácticas en pentesting, redes y forense, pensadas para el dia a dia.',
+          'Forja habilidades con rutas prácticas en pentesting, redes y forense, pensadas para el día a día.',
           'Aprende haciendo: labs guiados, proyectos y feedback para subir de nivel de forma consistente.'
         ],
         link: '/dojo',
@@ -422,16 +422,16 @@ async function HomePage() {
   // Por quA contactarnos
   const sec2 = createEl('section', { className: 'section' });
   const c2 = createEl('div', { className: 'container' });
-  c2.appendChild(createEl('h2', { className: 'section-title', text: 'Por que contactarnos' }));
+  c2.appendChild(createEl('h2', { className: 'section-title', text: 'Por qué contactarnos' }));
   const list = createEl('ul', { className: 'list' });
   [
     'Revela vulnerabilidades antes que los atacantes',
-    'Prioriza inversion: enfoque en riesgos reales',
+    'Prioriza inversión: enfoque en riesgos reales',
     'Mejora cumplimiento (OWASP, ISO, NIST)',
     'Entrena equipos con evidencias y casos reales'
   ].forEach(i => list.appendChild(createEl('li', { text: i })));
   c2.append(
-    createEl('p', { text: 'Un pentest bien ejecutado reduce exposicion, mejora decisiones de riesgo y acelera la madurez de seguridad.' }),
+    createEl('p', { text: 'Un pentest bien ejecutado reduce exposición, mejora decisiones de riesgo y acelera la madurez de seguridad.' }),
     list,
     createEl('div', { className: 'cta', children: [
       createEl('a', { className: 'btn btn-primary', text: 'Ir a Misiones', attrs: { href: '/misiones' } }),
@@ -445,8 +445,8 @@ async function HomePage() {
   const sec1 = createEl('section', { className: 'section' });
   const c1 = createEl('div', { className: 'container' });
   c1.appendChild(createEl('h2', { className: 'section-title', text: 'Quiénes somos' }));
-  c1.appendChild(createEl('p', { text: 'codeRonin es un dojo de ciberseguridad con espAritu ronin: construimos, probamos y aprendemos con Atica y mAtodo. Unimos mentalidad ofensiva y defensiva para pensar como atacante y diseAar mejores defensas.' }));
-  c1.appendChild(createEl('p', { text: 'Entrena en el Dojo (virtual/presencial), pon a prueba tus defensas con Misiones y equipa tu dAa a dAa en la ArmerAa con guAas y checklists.' }));
+  c1.appendChild(createEl('p', { text: 'codeRonin es un dojo de ciberseguridad con espíritu ronin: construimos, probamos y aprendemos con ética y método. Unimos mentalidad ofensiva y defensiva para pensar como atacante y diseñar mejores defensas.' }));
+  c1.appendChild(createEl('p', { text: 'Entrena en el Dojo (virtual/presencial), pon a prueba tus defensas con Misiones y equipa tu día a día en la Armería con guías y checklists.' }));
   const promo = createEl('div', { className: 'cta-banner' });
   promo.appendChild(createEl('div', { text: 'Espacio para banners y promociones (próximamente).' }));
   c1.appendChild(promo);
@@ -1187,7 +1187,10 @@ async function ProfilePage() {
   if (!me || !me.username) { navigate('/login', { replace: true }); return wrap; }
 
   const prof = await getJSON('/api/user/profile', { username: '', name: '', email: '', phone: '', avatarUrl: '' });
-  const roles = Array.isArray(prof.roles) ? prof.roles : [];
+  const roles = Array.isArray(prof.roles) ? prof.roles : (me && Array.isArray(me.roles) ? me.roles : []);
+  const isInstructor = Array.isArray(roles) && (roles.includes('sensei') || roles.includes('gato'));
+  const nav = document.getElementById('nav-links');
+  const classesLink = nav ? nav.querySelector('[data-id="nav-classes"]') : null;
   const card = createEl('div', { className: 'card' });
   const row = createEl('div', { className: 'profile-row' });
   const avatar = createEl('img', { attrs: { src: prof.avatarUrl || '/assets/material/logo.webp', alt: 'avatar', width: '96', height: '96' }, className: 'avatar' });
@@ -1224,14 +1227,16 @@ async function ProfilePage() {
     });
     c.appendChild(badges);
   }
-  if (!classesLink && isInstructor) {
-    const link = document.createElement('a');
-    link.href = '/clases';
-    link.textContent = 'Clases';
-    link.setAttribute('data-id', 'nav-classes');
-    nav.appendChild(link);
-  } else if (classesLink && !isInstructor) {
-    classesLink.remove();
+  if (nav) {
+    if (!classesLink && isInstructor) {
+      const link = document.createElement('a');
+      link.href = '/clases';
+      link.textContent = 'Clases';
+      link.setAttribute('data-id', 'nav-classes');
+      nav.appendChild(link);
+    } else if (classesLink && !isInstructor) {
+      classesLink.remove();
+    }
   }
   const r1 = createEl('div', { className: 'form-row' });
   r1.append(createEl('label', { text: 'Nombre' }));
@@ -1599,8 +1604,8 @@ async function AdminPage() {
       const tr = createEl('tr');
       tr.appendChild(createEl('td', { text: u.username }));
       const tdRole = createEl('td');
-      const roleKeys = ['genin','shinobi','gato'];
-      const roleLabels = { genin: 'genin', shinobi: 'shinobi', gato: 'sensei' };
+      const roleKeys = ['genin','shinobi','sensei','gato'];
+      const roleLabels = { genin: 'genin', shinobi: 'shinobi', sensei: 'sensei', gato: 'shogun' };
       const current = Array.isArray(u.roles) ? new Set(u.roles) : new Set();
       roleKeys.forEach(rk => {
         const label = document.createElement('label');
