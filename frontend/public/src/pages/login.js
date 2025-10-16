@@ -11,7 +11,7 @@ export async function LoginPage() {
   const card = createEl('div', { className: 'card login-card' });
   const brand = createEl('div', { className: 'brand login-brand' });
   const logo = createEl('img', { className: 'logo', attrs: { src: '/assets/material/logo.webp', alt: 'codeRonin' } });
-  const title = createEl('h2', { className: 'section-title', text: 'Iniciar sesiA3n' });
+  const title = createEl('h2', { className: 'section-title', text: 'Iniciar sesion' });
   const brandText = createEl('span', { className: 'brand-text', text: 'codeRonin' });
   brand.append(logo, brandText);
   card.append(brand, title);

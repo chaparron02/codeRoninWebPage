@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -28,14 +27,17 @@ router.get('/stats', async (_req, res) => {
   }
 });
 
-// Upload videos to material/videos
+// Upload dirs
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
 const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
 const VIDEOS_DIR = path.join(MATERIAL_DIR, 'videos');
+const IMAGES_DIR = path.join(MATERIAL_DIR, 'images');
 if (!fs.existsSync(VIDEOS_DIR)) fs.mkdirSync(VIDEOS_DIR, { recursive: true });
+if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR, { recursive: true });
 
+// Video upload
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, VIDEOS_DIR),
   filename: (_req, file, cb) => {
@@ -46,31 +48,55 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 200 * 1024 * 1024 }, // 200MB
+  limits: { fileSize: 200 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ok = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-matroska'].includes(file.mimetype);
     cb(ok ? null : new Error('Unsupported video type'), ok);
   }
 });
-
 router.post('/upload/video', upload.single('file'), (req, res) => {
   try {
     const name = req.file.filename;
     const url = `/material/videos/${encodeURIComponent(name)}`;
     return res.json({ ok: true, url, name });
-  } catch (err) {
+  } catch {
     return res.status(400).json({ error: 'Upload failed' });
   }
 });
 
-// Course modules JSON
-const MODULES_KEY = 'course_modules.json';
+// Image upload
+const imgStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, IMAGES_DIR),
+  filename: (_req, file, cb) => {
+    const safeBase = String(file.originalname || 'image').replace(/[^a-zA-Z0-9._-]+/g, '_');
+    const ts = Date.now();
+    cb(null, `${ts}_${safeBase}`);
+  }
+});
+const uploadImg = multer({
+  storage: imgStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = ['image/png','image/jpeg','image/jpg','image/webp','image/gif','image/svg+xml'].includes(file.mimetype);
+    cb(ok ? null : new Error('Unsupported image type'), ok);
+  }
+});
+router.post('/upload/image', uploadImg.single('file'), (req, res) => {
+  try {
+    const name = req.file.filename;
+    const url = `/material/images/${encodeURIComponent(name)}`;
+    return res.json({ ok: true, url, name });
+  } catch {
+    return res.status(400).json({ error: 'Upload failed' });
+  }
+});
 
+// Course modules JSON (kept for legacy)
+const MODULES_KEY = 'course_modules.json';
 router.get('/courses/modules', async (_req, res) => {
   const list = await readJSON(MODULES_KEY, []);
   res.json(list);
 });
-
 router.post('/courses/modules', async (req, res) => {
   try {
     const { title, description = '', order = 0, videoUrl = '' } = req.body || {};
@@ -83,11 +109,10 @@ router.post('/courses/modules', async (req, res) => {
     list.sort((a,b)=> (a.order||0)-(b.order||0) || a.createdAt.localeCompare(b.createdAt));
     await writeJSON(MODULES_KEY, list);
     res.status(201).json(item);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Cannot create module' });
   }
 });
-
 router.put('/courses/modules/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -104,11 +129,10 @@ router.put('/courses/modules/:id', async (req, res) => {
     list.sort((a,b)=> (a.order||0)-(b.order||0) || a.createdAt.localeCompare(b.createdAt));
     await writeJSON(MODULES_KEY, list);
     res.json(item);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Cannot update module' });
   }
 });
-
 router.delete('/courses/modules/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -117,11 +141,12 @@ router.delete('/courses/modules/:id', async (req, res) => {
     if (next.length === list.length) return res.status(404).json({ error: 'Not found' });
     await writeJSON(MODULES_KEY, next);
     res.status(204).end();
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Cannot delete module' });
   }
 });
 
+// Users
 router.get('/users', async (_req, res) => {
   try {
     const users = await User.find({}, { passwordHash: 0 }).sort({ createdAt: -1 }).lean();
@@ -130,20 +155,19 @@ router.get('/users', async (_req, res) => {
       roles: (Array.isArray(u.roles) && u.roles.length) ? u.roles : (u.role === 'admin' ? ['gato'] : (u.role ? ['genin'] : [])),
     }));
     res.json(mapped);
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'No se pudieron obtener usuarios' });
   }
 });
 
 router.put('/users/:id/role', async (req, res) => {
-  // Backward-compatible: if role provided as 'admin' or 'user', map to roles array
+  // Backward-compatible: map single role to roles array
   try {
     const { id } = req.params;
     const { role } = req.body || {};
     if (!role) return res.status(400).json({ error: 'Rol requerido' });
     const u = await User.findById(id).exec();
     if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
-    // map legacy
     if (role === 'admin') {
       u.role = 'admin';
       u.roles = Array.isArray(u.roles) ? Array.from(new Set([...u.roles, 'gato'])) : ['gato'];
@@ -155,7 +179,7 @@ router.put('/users/:id/role', async (req, res) => {
     }
     await u.save();
     res.json({ ok: true, roles: u.roles });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'No se pudo actualizar el rol' });
   }
 });
@@ -165,15 +189,14 @@ router.put('/users/:id/roles', async (req, res) => {
     const { id } = req.params;
     let { roles } = req.body || {};
     if (!Array.isArray(roles)) return res.status(400).json({ error: 'roles debe ser un array' });
-    roles = roles.filter(r => ['gato','shinobi','genin'].includes(r));
-    const u = await User.findById(id).exec();
-    if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
-    u.roles = Array.from(new Set(roles));
-    // optional legacy sync
-    if (u.roles.includes('gato')) u.role = 'admin'; else u.role = 'user';
-    await u.save();
-    res.json({ ok: true, roles: u.roles });
-  } catch (err) {
+    roles = roles.filter(r => ['gato','sensei','shinobi','genin'].includes(r));
+    const uniq = Array.from(new Set(roles));
+    const roleLegacy = uniq.includes('gato') ? 'admin' : 'user';
+    await User.updateOne({ _id: id }, { $set: { roles: uniq, role: roleLegacy } }).exec();
+    const updated = await User.findById(id).lean();
+    if (!updated) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ ok: true, roles: Array.isArray(updated.roles) ? updated.roles : [] });
+  } catch {
     res.status(500).json({ error: 'No se pudieron actualizar roles' });
   }
 });
@@ -186,7 +209,7 @@ router.put('/users/:id/toggle-active', async (req, res) => {
     u.active = !u.active;
     await u.save();
     res.json({ ok: true, active: u.active });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'No se pudo actualizar el estado' });
   }
 });

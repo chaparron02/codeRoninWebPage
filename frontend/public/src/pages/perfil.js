@@ -6,10 +6,13 @@ export async function ProfilePage() {
   const c = createEl('div', { className: 'container' });
   c.appendChild(createEl('h2', { className: 'section-title', text: 'Perfil' }));
   const me = await getJSON('/api/auth/me', null);
-  if (!me || !me.username) { navigate('/login', { replace: true }); return wrap; }
+  if (!me || !me.username) { const cc = createEl('div', { className: 'container' }); cc.appendChild(createEl('h2', { className: 'section-title', text: '403 - Forbidden' })); cc.appendChild(createEl('p', { text: 'No tienes permisos para acceder a esta seccion.' })); wrap.appendChild(cc); return wrap; }
 
   const prof = await getJSON('/api/user/profile', { username: '', name: '', email: '', phone: '', avatarUrl: '' });
-  const roles = Array.isArray(prof.roles) ? prof.roles : [];
+  const roles = Array.isArray(prof.roles) ? prof.roles : (me && Array.isArray(me.roles) ? me.roles : []);
+  const isInstructor = Array.isArray(roles) && (roles.includes('sensei') || roles.includes('gato'));
+  const nav = document.getElementById('nav-links');
+  const classesLink = nav ? nav.querySelector('[data-id="nav-classes"]') : null;
   const card = createEl('div', { className: 'card' });
   const row = createEl('div', { className: 'profile-row' });
   const avatar = createEl('img', { attrs: { src: prof.avatarUrl || '/assets/material/logo.webp', alt: 'avatar', width: '96', height: '96' }, className: 'avatar' });
@@ -46,14 +49,16 @@ export async function ProfilePage() {
     });
     c.appendChild(badges);
   }
-  if (!classesLink && isInstructor) {
-    const link = document.createElement('a');
-    link.href = '/clases';
-    link.textContent = 'Clases';
-    link.setAttribute('data-id', 'nav-classes');
-    nav.appendChild(link);
-  } else if (classesLink && !isInstructor) {
-    classesLink.remove();
+  if (nav) {
+    if (!classesLink && isInstructor) {
+      const link = document.createElement('a');
+      link.href = '/clases';
+      link.textContent = 'Clases';
+      link.setAttribute('data-id', 'nav-classes');
+      nav.appendChild(link);
+    } else if (classesLink && !isInstructor) {
+      classesLink.remove();
+    }
   }
   const r1 = createEl('div', { className: 'form-row' });
   r1.append(createEl('label', { text: 'Nombre' }));

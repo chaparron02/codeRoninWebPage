@@ -18,16 +18,35 @@ export function Card({ title, desc, tags = [], cta, image }) {
 }
 
 export async function Courses() {
-  const items = await getJSON('/api/courses.json', [
+  let items = await getJSON('/api/courses.json', [
     { title: 'Hacking Etico', description: 'Fundamentos y metodologia de pruebas.', tags: ['pentesting','etica'] },
     { title: 'Cybersecurity Fundamentals', description: 'Conceptos clave y control de riesgos.', tags: ['fundamentos'] },
     { title: 'Seguridad en Redes', description: 'Arquitecturas y segmentacion.', tags: ['redes'] },
     { title: 'Analisis Forense', description: 'Adquisicion y analisis de evidencia.', tags: ['forense'] },
   ]);
+  try {
+    if (Array.isArray(items) && items.some(c => (c.modalidad||c.modality))) {
+      items = items.filter(c => (c.modalidad||c.modality) !== 'presencial');
+    }
+  } catch {}
   const grid = createEl('div', { className: 'card-grid' });
   items.forEach(c => {
-    const body = Card({ title: c.title, desc: c.description, tags: c.tags, image: c.image });
-    grid.appendChild(body);
+    const isVirtual = (c.modalidad||c.modality) === 'virtual';
+    const isPresencial = (c.modalidad||c.modality) === 'presencial';
+    let cta = null;
+    const card = Card({ title: c.title, desc: c.description, tags: c.tags, image: c.image });
+    if (isVirtual && c.link) {
+      const price = c.price != null ? createEl('span', { className: 'badge price', text: `$${c.price}` }) : null;
+      if (price) card.appendChild(createEl('div', { className: 'badge-row', children: [price] }));
+      cta = createEl('a', { className: 'btn btn-sm btn-primary', text: 'Comprar', attrs: { href: c.link, target: '_blank', rel: 'noopener noreferrer' } });
+      card.appendChild(cta);
+    }
+    if (isPresencial) {
+      const href = `/formulario?modalidad=presencial&interes=${encodeURIComponent(c.title||'')}&categoria=${encodeURIComponent(c.category||'Presencial')}`;
+      cta = createEl('a', { className: 'btn btn-sm btn-primary', text: 'Llenar formulario', attrs: { href } });
+      card.appendChild(cta);
+    }
+    grid.appendChild(card);
   });
   return grid;
 }
@@ -180,4 +199,3 @@ export function Hero() {
   btnArm.addEventListener('click', () => showHeroInfo('armeria'));
   return section;
 }
-

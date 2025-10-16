@@ -1,4 +1,4 @@
-import { $, createEl, showModal, navigate, updateAuthNav, getJSON, setToken } from '../lib/core.js'
+import { $, $$, createEl, showModal, navigate, updateAuthNav, getJSON, setToken } from '../lib/core.js'
 import { Hero, Card, Courses, Services, Projects, PDFs, AchievementsSection, EmbedInstagram, EmbedTikTok } from '../lib/components.js'
 
 export async function DojoPage() {
@@ -59,6 +59,25 @@ export async function DojoPage() {
         wrap.appendChild(secCat);
       });
       panels.appendChild(wrap);
+      // Dynamic presenciales from backend (modalidad=presencial)
+      try {
+        const list = await getJSON('/api/courses.json', []);
+        const pres = Array.isArray(list) ? list.filter(c => (c.modalidad||c.modality) === 'presencial') : [];
+        if (pres.length) {
+          const secCat = createEl('section', { className: 'section' });
+          const cc = createEl('div', { className: 'container' });
+          cc.appendChild(createEl('h3', { text: 'Capacitaciones presenciales' }));
+          const grid = createEl('div', { className: 'card-grid' });
+          pres.forEach(c => {
+            const href = `/formulario?modalidad=presencial&interes=${encodeURIComponent(c.title||'')}&categoria=${encodeURIComponent(c.category||'Presencial')}`;
+            const btn = createEl('a', { className: 'btn btn-sm btn-primary', text: 'Llenar formulario', attrs: { href } });
+            grid.appendChild(Card({ title: c.title, desc: c.description||'Sesion presencial con enfoque practico.', tags: ['presencial', ...(Array.isArray(c.tags)?c.tags:[])], image: c.image, cta: btn }));
+          });
+          cc.appendChild(grid);
+          secCat.appendChild(cc);
+          panels.appendChild(secCat);
+        }
+      } catch {}
     }
   }
   defTabs.forEach(t => {
