@@ -224,7 +224,7 @@ function Hero() {
   section.append(container, mesh, grid);
 
   function setActive(kind) {
-    const map = { misiones: btnMis, dojo: btnDojo, armeria: btnArm };
+    const map = { misiones: btnMis, dojo: btnDojo, armería: btnArm };
     [btnMis, btnDojo, btnArm].forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
     const b = map[kind];
     if (b) { b.classList.add('active'); b.setAttribute('aria-pressed', 'true'); }
@@ -235,8 +235,8 @@ function Hero() {
       misiones: {
         title: 'Misiones de hacking ético',
         body: [
-          'Desafíos reales, impacto real: ejecutamos ataques controlados para revelar brechas con evidencia accionable.',
-          'Transforma hallazgos en mejoras priorizadas por riesgo y mide el avance de tu seguridad en cada iteración.'
+          'Desafios reales, impacto real: ejecutamos ataques controlados para revelar brechas con evidencia accionable.',
+          'Transforma hallazgos en mejoras priorizadas por riesgo y mide el avance de tu seguridad en cada iteracion.'
         ],
         link: '/misiones',
         img: '/assets/material/ninja1.webp'
@@ -244,20 +244,20 @@ function Hero() {
       dojo: {
         title: 'Dojo',
         body: [
-          'Forja habilidades con rutas prácticas en pentesting, redes y forense, pensadas para el día a día.',
+          'Forja habilidades con rutas prácticas en pentesting, redes y forense, pensadas para el dia a dia.',
           'Aprende haciendo: labs guiados, proyectos y feedback para subir de nivel de forma consistente.'
         ],
         link: '/dojo',
         img: '/assets/material/dojo1.webp'
       },
-      armeria: {
+      armería: {
         title: 'Armería',
         body: [
           'Tu kit esencial del ronin digital: guías, checklists y plantillas listas para aplicar.',
           'Estandariza procesos, acelera entregables y evita reinventar la rueda en cada misión.'
         ],
-        link: '/armeria',
-        img: '/assets/material/armeria.webp'
+        link: '/armería',
+        img: '/assets/material/armería.webp'
       }
     };
     const data = map[kind];
@@ -283,7 +283,7 @@ function Hero() {
 
   btnMis.addEventListener('click', () => showHeroInfo('misiones'));
   btnDojo.addEventListener('click', () => showHeroInfo('dojo'));
-  btnArm.addEventListener('click', () => showHeroInfo('armeria'));
+  btnArm.addEventListener('click', () => showHeroInfo('armería'));
   return section;
 }
 
@@ -422,21 +422,21 @@ async function HomePage() {
   // Por quA contactarnos
   const sec2 = createEl('section', { className: 'section' });
   const c2 = createEl('div', { className: 'container' });
-  c2.appendChild(createEl('h2', { className: 'section-title', text: 'Por qué contactarnos' }));
+  c2.appendChild(createEl('h2', { className: 'section-title', text: 'Por que contactarnos' }));
   const list = createEl('ul', { className: 'list' });
   [
     'Revela vulnerabilidades antes que los atacantes',
-    'Prioriza inversión: enfoque en riesgos reales',
+    'Prioriza inversi�n: enfoque en riesgos reales',
     'Mejora cumplimiento (OWASP, ISO, NIST)',
     'Entrena equipos con evidencias y casos reales'
   ].forEach(i => list.appendChild(createEl('li', { text: i })));
   c2.append(
-    createEl('p', { text: 'Un pentest bien ejecutado reduce exposición, mejora decisiones de riesgo y acelera la madurez de seguridad.' }),
+    createEl('p', { text: 'Un pentest bien ejecutado reduce exposicion, mejora decisiones de riesgo y acelera la madurez de seguridad.' }),
     list,
     createEl('div', { className: 'cta', children: [
       createEl('a', { className: 'btn btn-primary', text: 'Ir a Misiones', attrs: { href: '/misiones' } }),
       createEl('a', { className: 'btn btn-ghost', text: 'Ir al Dojo', attrs: { href: '/dojo' } }),
-      createEl('a', { className: 'btn btn-ghost', text: 'Ir a Armería', attrs: { href: '/armeria' } })
+      createEl('a', { className: 'btn btn-ghost', text: 'Ir a Armería', attrs: { href: '/armería' } })
     ] })
   );
   sec2.appendChild(c2);
@@ -445,8 +445,8 @@ async function HomePage() {
   const sec1 = createEl('section', { className: 'section' });
   const c1 = createEl('div', { className: 'container' });
   c1.appendChild(createEl('h2', { className: 'section-title', text: 'Quiénes somos' }));
-  c1.appendChild(createEl('p', { text: 'codeRonin es un dojo de ciberseguridad con espíritu ronin: construimos, probamos y aprendemos con ética y método. Unimos mentalidad ofensiva y defensiva para pensar como atacante y diseñar mejores defensas.' }));
-  c1.appendChild(createEl('p', { text: 'Entrena en el Dojo (virtual/presencial), pon a prueba tus defensas con Misiones y equipa tu día a día en la Armería con guías y checklists.' }));
+  c1.appendChild(createEl('p', { text: 'codeRonin es un dojo de ciberseguridad con espAritu ronin: construimos, probamos y aprendemos con Atica y mAtodo. Unimos mentalidad ofensiva y defensiva para pensar como atacante y diseAar mejores defensas.' }));
+  c1.appendChild(createEl('p', { text: 'Entrena en el Dojo (virtual/presencial), pon a prueba tus defensas con Misiones y equipa tu dAa a dAa en la ArmerAa con guAas y checklists.' }));
   const promo = createEl('div', { className: 'cta-banner' });
   promo.appendChild(createEl('div', { text: 'Espacio para banners y promociones (próximamente).' }));
   c1.appendChild(promo);
@@ -859,7 +859,7 @@ async function MissionsPage() {
     { title: 'Pentesting Infraestructura', desc: 'EvaluaciA3n interna/externa, Active Directory y rutas de ataque realistas.', tags: ['red','ad'], image: '/assets/material/ninja2.webp' },
     { title: 'Pruebas de sistema operativo', desc: 'EvaluaciA3n de configuraciA3n, servicios y privilegios en Windows/Linux.', tags: ['os','hardening'], image: '/assets/material/dojo1.webp' },
     { title: 'IntrusiA3n fAsica', desc: 'Pruebas controladas de acceso fAsico, tailgating y exposiciA3n de activos.', tags: ['fisico'], image: '/assets/material/ninja4.webp' },
-    { title: 'Pruebas de redes WiFi', desc: 'Auditoría de WLAN, cifrados, segregación y ataques comunes (capturas/evil twin).', tags: ['wifi','802.11'], image: '/assets/material/armeria.webp' },
+    { title: 'Pruebas de redes WiaFi', desc: 'AuditorAa de WLAN, cifrados, segregaciA3n y ataques comunes (capturas/evil twin).', tags: ['wifi','802.11'], image: '/assets/material/armería.webp' },
   ];
   c.appendChild(missionSection(
     'Red Team / Seguridad ofensiva',
@@ -874,7 +874,7 @@ async function MissionsPage() {
     { title: 'GestiA3n de Vulnerabilidades', desc: 'Ciclo continuo: descubrimiento, priorizaciA3n (CVSS/EPSS), parchado y verificaciA3n.', tags: ['vulns','riesgo'], image: '/assets/material/ninja2.webp' },
     { title: 'DFIR y Respuesta a Incidentes', desc: 'Forense, contenciA3n, erradicaciA3n y mejora continua con lecciones aprendidas.', tags: ['dfir','ir'], image: '/assets/material/ninja4.webp' },
     { title: 'Threat Modeling y Arquitectura Segura', desc: 'STRIDE/ATT&CK, patrones seguros y controles por diseAo.', tags: ['arquitectura'], image: '/assets/material/ninja3.webp' },
-    { title: 'Hardening y Baselines', desc: 'Benchmarks CIS y políticas de configuración para reducir superficie de ataque.', tags: ['cis','baseline'], image: '/assets/material/armeria.webp' },
+    { title: 'Hardening y Baselines', desc: 'Benchmarks CIS y polAticas de configuraciA3n para reducir superficie de ataque.', tags: ['cis','baseline'], image: '/assets/material/armería.webp' },
     { title: 'Seguridad en la Nube', desc: 'RevisiA3n IAM, redes y datos en AWS/Azure/GCP con hardening y monitoreo.', tags: ['cloud','iam'], image: '/assets/material/ninja1.webp' },
   ];
   c.appendChild(missionSection(
@@ -1007,7 +1007,7 @@ const routes = {
   'formulario': FormPage,
   'form-mision': FormMisionPage,
   'misiones': MissionsPage,
-  'armeria': ResourcesPage,
+  'armería': ResourcesPage,
   'login': LoginPage,
   'signup': SignupPage,
   'perfil': ProfilePage,
@@ -1187,10 +1187,7 @@ async function ProfilePage() {
   if (!me || !me.username) { navigate('/login', { replace: true }); return wrap; }
 
   const prof = await getJSON('/api/user/profile', { username: '', name: '', email: '', phone: '', avatarUrl: '' });
-  const roles = Array.isArray(prof.roles) ? prof.roles : (me && Array.isArray(me.roles) ? me.roles : []);
-  const isInstructor = Array.isArray(roles) && (roles.includes('sensei') || roles.includes('gato'));
-  const nav = document.getElementById('nav-links');
-  const classesLink = nav ? nav.querySelector('[data-id="nav-classes"]') : null;
+  const roles = Array.isArray(prof.roles) ? prof.roles : [];
   const card = createEl('div', { className: 'card' });
   const row = createEl('div', { className: 'profile-row' });
   const avatar = createEl('img', { attrs: { src: prof.avatarUrl || '/assets/material/logo.webp', alt: 'avatar', width: '96', height: '96' }, className: 'avatar' });
@@ -1227,16 +1224,14 @@ async function ProfilePage() {
     });
     c.appendChild(badges);
   }
-  if (nav) {
-    if (!classesLink && isInstructor) {
-      const link = document.createElement('a');
-      link.href = '/clases';
-      link.textContent = 'Clases';
-      link.setAttribute('data-id', 'nav-classes');
-      nav.appendChild(link);
-    } else if (classesLink && !isInstructor) {
-      classesLink.remove();
-    }
+  if (!classesLink && isInstructor) {
+    const link = document.createElement('a');
+    link.href = '/clases';
+    link.textContent = 'Clases';
+    link.setAttribute('data-id', 'nav-classes');
+    nav.appendChild(link);
+  } else if (classesLink && !isInstructor) {
+    classesLink.remove();
   }
   const r1 = createEl('div', { className: 'form-row' });
   r1.append(createEl('label', { text: 'Nombre' }));
@@ -1604,8 +1599,8 @@ async function AdminPage() {
       const tr = createEl('tr');
       tr.appendChild(createEl('td', { text: u.username }));
       const tdRole = createEl('td');
-      const roleKeys = ['genin','shinobi','sensei','gato'];
-      const roleLabels = { genin: 'genin', shinobi: 'shinobi', sensei: 'sensei', gato: 'shogun' };
+      const roleKeys = ['genin','shinobi','gato'];
+      const roleLabels = { genin: 'genin', shinobi: 'shinobi', gato: 'sensei' };
       const current = Array.isArray(u.roles) ? new Set(u.roles) : new Set();
       roleKeys.forEach(rk => {
         const label = document.createElement('label');
@@ -1747,6 +1742,12 @@ async function InstructorPage() {
   wrap.appendChild(c);
   return wrap;
 }
+
+
+
+
+
+
 
 
 
