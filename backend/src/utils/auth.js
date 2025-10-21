@@ -40,10 +40,20 @@ export function requireAuth(req, res, next) {
 
 export function requireAdmin(req, res, next) {
   return requireAuth(req, res, () => {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Requiere rol admin' });
+    const roles = (req.user && Array.isArray(req.user.roles)) ? req.user.roles : [];
+    if (!roles.includes('gato')) {
+      return res.status(403).json({ error: 'Requiere rol gato' });
     }
     next();
   });
 }
 
+export function requireRoles(allowed = []) {
+  return (req, res, next) =>
+    requireAuth(req, res, () => {
+      const roles = (req.user && Array.isArray(req.user.roles)) ? req.user.roles : [];
+      const ok = allowed.some(r => roles.includes(r));
+      if (!ok) return res.status(403).json({ error: 'Rol insuficiente' });
+      next();
+    });
+}

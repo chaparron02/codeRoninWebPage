@@ -76,25 +76,24 @@ async function updateAuthNav() {
   const existing = nav.querySelector('a[data-id="nav-admin"]');
   const loginLink = nav.querySelector('a[data-id="nav-login"]');
   const profileLink = nav.querySelector('a[data-id="nav-profile"]');
-  const isAdmin = !!(me && me.role === 'admin');
+  const classesLink = nav.querySelector('a[data-id="nav-classes"]');
+  const isAdmin = !!(me && Array.isArray(me.roles) && me.roles.includes('gato'));
+  const isInstructor = !!(me && Array.isArray(me.roles) && (me.roles.includes('gato') || me.roles.includes('sensei')));
   // Update user chip
   try {
     const chip = document.getElementById('user-chip');
     if (chip) {
       chip.innerHTML = '';
-      const label = me && me.username ? (me.displayName || me.username) : '';
+      const label = me && me.username ? me.username : '';
       if (label) {
-        const a = document.createElement('a');
-        a.href = '/perfil';
-        a.textContent = label;
-        a.className = 'user-link';
-        const caret = document.createElement('button');
-        caret.type = 'button';
-        caret.className = 'user-caret';
-        caret.setAttribute('aria-label', 'Abrir menu de usuario');
-        caret.textContent = '';
-        caret.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleUserMenu(caret); });
-        chip.append(a, caret);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'user-button';
+        btn.textContent = label;
+        btn.setAttribute('aria-label', 'Abrir menu de usuario');
+        btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); toggleUserMenu(btn); });
+        btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUserMenu(btn); } });
+        chip.appendChild(btn);
       }
     }
   } catch {}
@@ -427,7 +426,7 @@ async function HomePage() {
   const list = createEl('ul', { className: 'list' });
   [
     'Revela vulnerabilidades antes que los atacantes',
-    'Prioriza inversion: enfoque en riesgos reales',
+    'Prioriza inversi髇: enfoque en riesgos reales',
     'Mejora cumplimiento (OWASP, ISO, NIST)',
     'Entrena equipos con evidencias y casos reales'
   ].forEach(i => list.appendChild(createEl('li', { text: i })));
@@ -844,7 +843,7 @@ async function MissionsPage() {
     cc.appendChild(createEl('p', { text: intro }));
     const grid = createEl('div', { className: 'card-grid' });
     items.forEach(it => {
-      const href = `/form-misi贸n?interes=${encodeURIComponent(it.title)}&categoria=${encodeURIComponent(title)}&tipo=${encodeURIComponent(catKey)}`;
+      const href = `/form-mision?interes=${encodeURIComponent(it.title)}&categoria=${encodeURIComponent(title)}&tipo=${encodeURIComponent(catKey)}`;
       const btn = createEl('a', { className: 'btn btn-sm btn-primary', text: 'Llenar formulario', attrs: { href } });
       grid.appendChild(Card({ title: it.title, desc: it.desc, tags: it.tags || [], image: it.image, cta: btn }));
     });
@@ -1006,13 +1005,14 @@ const routes = {
   '/': HomePage,
   'dojo': DojoPage,
   'formulario': FormPage,
-  'form-misi贸n': FormMisionPage,
+  'form-mision': FormMisionPage,
   'misiones': MissionsPage,
   'armer铆a': ResourcesPage,
   'login': LoginPage,
   'signup': SignupPage,
   'perfil': ProfilePage,
   'admin': AdminPage,
+  'clases': InstructorPage,
   // Aliases
   'cursos': CoursesPage,
   'servicios': ServicesPage,
@@ -1135,10 +1135,10 @@ async function LoginPage() {
   form.append(fg1, fg2, actions);
   card.appendChild(form);
 
-  // If already logged-in admin, go to admin
+  // If already logged-in admin (gato), go to admin
   try {
     const me = await getJSON('/api/auth/me', null);
-    if (me && me.role === 'admin') {
+    if (me && Array.isArray(me.roles) && me.roles.includes('gato')) {
       navigate('/admin');
     }
   } catch {}
@@ -1160,7 +1160,7 @@ async function LoginPage() {
       const data = await res.json();
       try { localStorage.setItem('cr_last_username', String(user.value || '')); } catch {}
       setToken(data.token || '');
-      if (data?.user?.role === 'admin') {
+      if (data?.user?.roles && Array.isArray(data.user.roles) && data.user.roles.includes('gato')) {
         navigate('/admin');
       } else {
         navigate('/');
@@ -1187,6 +1187,7 @@ async function ProfilePage() {
   if (!me || !me.username) { navigate('/login', { replace: true }); return wrap; }
 
   const prof = await getJSON('/api/user/profile', { username: '', name: '', email: '', phone: '', avatarUrl: '' });
+  const roles = Array.isArray(prof.roles) ? prof.roles : [];
   const card = createEl('div', { className: 'card' });
   const row = createEl('div', { className: 'profile-row' });
   const avatar = createEl('img', { attrs: { src: prof.avatarUrl || '/assets/material/logo.webp', alt: 'avatar', width: '96', height: '96' }, className: 'avatar' });
@@ -1213,9 +1214,28 @@ async function ProfilePage() {
   });
 
   const form = createEl('form', { className: 'cr-form', attrs: { autocomplete: 'off' } });
+  // Roles (read-only badges)
+  if (roles && roles.length) {
+    const badges = createEl('div', { className: 'badge-row' });
+    roles.forEach(r => {
+      const label = (r === 'gato') ? 'shogun' : r;
+      const cls = r === 'gato' ? 'badge role-shogun' : (r === 'sensei' ? 'badge role-sensei' : (r === 'shinobi' ? 'badge role-shinobi' : 'badge role-genin'));
+      badges.appendChild(createEl('span', { className: cls, text: label }));
+    });
+    c.appendChild(badges);
+  }
+  if (!classesLink && isInstructor) {
+    const link = document.createElement('a');
+    link.href = '/clases';
+    link.textContent = 'Clases';
+    link.setAttribute('data-id', 'nav-classes');
+    nav.appendChild(link);
+  } else if (classesLink && !isInstructor) {
+    classesLink.remove();
+  }
   const r1 = createEl('div', { className: 'form-row' });
   r1.append(createEl('label', { text: 'Nombre' }));
-  const iName = createEl('input', { attrs: { type: 'text', value: prof.name || me.displayName || '' } });
+  const iName = createEl('input', { attrs: { type: 'text', value: prof.name || '' } });
   r1.appendChild(iName);
   const r2 = createEl('div', { className: 'form-row' });
   r2.append(createEl('label', { text: 'Usuario' }));
@@ -1362,11 +1382,11 @@ async function AdminPage() {
   const token = getToken();
   let me = null;
   if (token) me = await getJSON('/api/auth/me', null);
-  if (!me || me.role !== 'admin') { navigate('/login', { replace: true }); return wrap; }
+  if (!me || !Array.isArray(me.roles) || !me.roles.includes('gato')) { navigate('/login', { replace: true }); return wrap; }
 
   // Logged in: visor
   const top = createEl('div', { className: 'badge-row' });
-  top.appendChild(createEl('span', { className: 'badge', text: `Usuario: ${me.displayName || me.username}` }));
+  top.appendChild(createEl('span', { className: 'badge', text: `Usuario: ${me.username}` }));
   const logout = createEl('button', { className: 'btn', text: 'Salir' });
   logout.addEventListener('click', async () => {
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
@@ -1573,14 +1593,31 @@ async function AdminPage() {
     const uWrap = createEl('div', { className: 'table-wrap' }); const uTable = createEl('table', { className: 'table users-table' }); uWrap.appendChild(uTable);
     rightPane.appendChild(uWrap);
     const users = await getJSON('/api/admin/users', []);
-    const thead = createEl('thead'); const trh = createEl('tr'); ['usuario','rol','activo','creado'].forEach(h => trh.appendChild(createEl('th',{text:h}))); thead.appendChild(trh);
+    const thead = createEl('thead'); const trh = createEl('tr'); ['usuario','roles','activo','creado'].forEach(h => trh.appendChild(createEl('th',{text:h}))); thead.appendChild(trh);
     const tbody = createEl('tbody');
     (users||[]).forEach(u => {
       const tr = createEl('tr');
       tr.appendChild(createEl('td', { text: u.username }));
-      const tdRole = createEl('td'); const sel = document.createElement('select'); ['user','admin'].forEach(r=>{const o=document.createElement('option'); o.value=r; o.textContent=r; if(u.role===r) o.selected=true; sel.appendChild(o);});
-      sel.addEventListener('change', async () => { const token = getToken(); const headers = { 'content-type': 'application/json' }; if (token) headers['authorization'] = `Bearer ${token}`; await fetch(`/api/admin/users/${u._id}/role`, { method: 'PUT', headers, body: JSON.stringify({ role: sel.value }) }); });
-      tdRole.appendChild(sel); tr.appendChild(tdRole);
+      const tdRole = createEl('td');
+      const roleKeys = ['genin','shinobi','gato'];
+      const roleLabels = { genin: 'genin', shinobi: 'shinobi', gato: 'sensei' };
+      const current = Array.isArray(u.roles) ? new Set(u.roles) : new Set();
+      roleKeys.forEach(rk => {
+        const label = document.createElement('label');
+        label.style.marginRight = '8px';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = current.has(rk);
+        cb.addEventListener('change', async () => {
+          try {
+            const roles = roleKeys.filter(k => (k===rk ? cb.checked : current.has(k)));
+            const token = getToken(); const headers = { 'content-type': 'application/json' }; if (token) headers['authorization'] = `Bearer ${token}`;
+            const res = await fetch(`/api/admin/users/${u._id}/roles`, { method: 'PUT', headers, body: JSON.stringify({ roles }) });
+            if (res.ok) { const j = await res.json(); current.clear(); (j.roles||[]).forEach(x=>current.add(x)); }
+          } catch {}
+        });
+        label.append(cb, document.createTextNode(' '+roleLabels[rk]));
+        tdRole.appendChild(label);
+      });
+      tr.appendChild(tdRole);
       const tdAct = createEl('td'); const btnT = createEl('button', { className: 'btn', text: u.active ? 'Desactivar' : 'Activar' });
       btnT.addEventListener('click', async () => { const token = getToken(); const r = await fetch(`/api/admin/users/${u._id}/toggle-active`, { method: 'PUT', headers: token ? { authorization: `Bearer ${token}` } : {} }); const j = await r.json(); btnT.textContent = (j.active ? 'Desactivar' : 'Activar'); });
       tdAct.appendChild(btnT); tr.appendChild(tdAct);
@@ -1600,6 +1637,117 @@ async function AdminPage() {
   wrap.appendChild(c);
   return wrap;
 }
+
+// Instructor page (full page for uploading modules)
+async function InstructorPage() {
+  const wrap = createEl('section', { className: 'section page', attrs: { id: 'clases' } });
+  const c = createEl('div', { className: 'container admin-container' });
+  c.appendChild(createEl('h2', { className: 'section-title', text: 'Clases y M贸dulos' }));
+
+  const me = await getJSON('/api/auth/me', null);
+  if (!me || !Array.isArray(me.roles) || !(me.roles.includes('gato') || me.roles.includes('sensei'))) {
+    navigate('/login', { replace: true });
+    return wrap;
+  }
+
+  // Load courses from Dojo (API)
+  const courses = await getJSON('/api/courses.json', []);
+  const top = createEl('div', { className: 'admin-toolbar' });
+  const selCourse = document.createElement('select');
+  const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent='Selecciona un curso'; selCourse.appendChild(opt0);
+  (courses || []).forEach(cs => { const o = document.createElement('option'); o.value = cs.title || cs.name || ''; o.textContent = cs.title || cs.name || ''; selCourse.appendChild(o); });
+  top.appendChild(selCourse);
+  c.appendChild(top);
+
+  const grid = createEl('div', { className: 'admin-split' }); grid.style.setProperty('--left', '360px');
+  const left = createEl('div', { className: 'admin-pane left' });
+  const handle = createEl('div', { className: 'split-handle', attrs: { role: 'separator', 'aria-orientation': 'vertical' } });
+  const right = createEl('div', { className: 'admin-pane' });
+  grid.append(left, handle, right);
+  c.appendChild(grid);
+
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const start = parseInt(getComputedStyle(grid).getPropertyValue('--left')) || 360;
+    const onMove = (ev) => { const dx = ev.clientX - startX; let w = start + dx; w = Math.max(240, Math.min(w, 640)); grid.style.setProperty('--left', w + 'px'); };
+    const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+  });
+
+  // Left: form to add module
+  left.append(createEl('h3', { text: 'Agregar m贸dulo' }), createEl('p', { className: 'muted', text: 'Sube un video o define una URL y asigna el curso.' }));
+  const form = createEl('form', { className: 'cr-form' });
+  const fr1 = createEl('div', { className: 'form-row' }); fr1.append(createEl('label', { text: 'T铆tulo' })); const iTitle = createEl('input', { attrs: { type: 'text', required: '' } }); fr1.appendChild(iTitle);
+  const fr2 = createEl('div', { className: 'form-row' }); fr2.append(createEl('label', { text: 'Descripci贸n' })); const iDesc = createEl('input', { attrs: { type: 'text' } }); fr2.appendChild(iDesc);
+  const fr3 = createEl('div', { className: 'form-row' }); fr3.append(createEl('label', { text: 'Orden' })); const iOrder = createEl('input', { attrs: { type: 'number', value: '0' } }); fr3.appendChild(iOrder);
+  const fr4 = createEl('div', { className: 'form-row' }); fr4.append(createEl('label', { text: 'Video (archivo)' })); const iFile = createEl('input', { attrs: { type: 'file', accept: 'video/*' } }); fr4.appendChild(iFile);
+  const fr5 = createEl('div', { className: 'form-row' }); fr5.append(createEl('label', { text: 'o URL de video' })); const iUrl = createEl('input', { attrs: { type: 'url', placeholder: 'https://...' } }); fr5.appendChild(iUrl);
+  const frA = createEl('div', { className: 'form-actions' }); const btnAdd = createEl('button', { className: 'btn btn-primary', text: 'Agregar' }); frA.appendChild(btnAdd);
+  form.append(fr1, fr2, fr3, fr4, fr5, frA);
+  left.appendChild(form);
+
+  // Right: list of modules
+  const tableWrap = createEl('div', { className: 'table-wrap' }); const table = createEl('table', { className: 'table' }); tableWrap.appendChild(table);
+  right.appendChild(tableWrap);
+
+  async function listModules(course) {
+    table.innerHTML = '';
+    if (!course) return;
+    const items = await getJSON(`/api/instructor/courses/modules?course=${encodeURIComponent(course)}`, []);
+    const thead = createEl('thead'); const trh = createEl('tr'); ['orden','titulo','video','acciones'].forEach(h=> trh.appendChild(createEl('th',{text:h}))); thead.appendChild(trh);
+    const tbody = createEl('tbody');
+    (items||[]).forEach(m => {
+      const tr = createEl('tr');
+      tr.append(createEl('td',{ text: String(m.order||0) }), createEl('td',{ text: m.title||'' }), createEl('td',{ children: [ createEl('a',{ text: 'ver', attrs: { href: m.videoUrl||'#', target: '_blank', rel: 'noopener noreferrer' } }) ] }));
+      const tdAct = createEl('td');
+      const del = createEl('button', { className: 'btn', text: 'Eliminar' });
+      del.addEventListener('click', async () => {
+        if (!confirm('Eliminar m贸dulo?')) return;
+        const token = getToken();
+        await fetch(`/api/instructor/courses/modules/${encodeURIComponent(m.id)}`, { method: 'DELETE', headers: token ? { authorization: `Bearer ${token}` } : {} });
+        await listModules(course);
+      });
+      tdAct.appendChild(del);
+      tr.appendChild(tdAct);
+      tbody.appendChild(tr);
+    });
+    table.append(thead, tbody);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault(); btnAdd.disabled = true;
+    try {
+      const course = selCourse.value || '';
+      if (!course) throw new Error('Selecciona un curso');
+      let videoUrl = iUrl.value.trim();
+      if (!videoUrl && iFile.files && iFile.files[0]) {
+        const fd = new FormData(); fd.append('file', iFile.files[0]);
+        const token = getToken();
+        const up = await fetch('/api/instructor/upload/video', { method: 'POST', headers: token ? { authorization: `Bearer ${token}` } : {}, body: fd });
+        if (!up.ok) throw new Error('No se pudo subir');
+        const uj = await up.json(); videoUrl = uj.url;
+      }
+      const token = getToken(); const headers = { 'content-type': 'application/json' }; if (token) headers['authorization'] = `Bearer ${token}`;
+      const res = await fetch('/api/instructor/courses/modules', { method: 'POST', headers, body: JSON.stringify({ title: iTitle.value, description: iDesc.value, order: iOrder.value, videoUrl, course }) });
+      if (!res.ok) throw new Error('No se pudo crear');
+      iTitle.value=''; iDesc.value=''; iOrder.value='0'; iFile.value=''; iUrl.value='';
+      await listModules(course);
+    } catch (err) { showModal(err.message||'Error', { title: 'Error' }); }
+    finally { btnAdd.disabled = false; }
+  });
+
+  selCourse.addEventListener('change', async () => { await listModules(selCourse.value || ''); });
+
+  wrap.appendChild(c);
+  return wrap;
+}
+
+
+
+
+
+
 
 
 

@@ -15,7 +15,11 @@ router.post('/login', async (req, res) => {
     const freshUser = await User.findById(user._id); // obtener doc para seleccionar hash
     const ok = await bcrypt.compare(password, freshUser.passwordHash);
     if (!ok) return res.status(401).json({ error: 'Usuario o clave invalidos' });
-    const payload = { sub: String(user._id), username: user.username, role: user.role };
+    // derive roles (legacy mapping)
+    const roles = Array.isArray(user.roles) && user.roles.length
+      ? user.roles
+      : (user.role === 'admin' ? ['gato'] : (user.role ? ['genin'] : []));
+    const payload = { sub: String(user._id), username: user.username, roles };
     const token = signToken(payload);
     // Enviar tambien en cookie (opcional)
     res.cookie?.('cr_token', token, {
@@ -25,7 +29,7 @@ router.post('/login', async (req, res) => {
       maxAge: 1000 * 60 * 60 * 8,
       path: '/',
     });
-    res.json({ token, user: { username: user.username, role: user.role, displayName: user.displayName || user.username } });
+    res.json({ token, user: { username: user.username, roles, displayName: user.displayName || user.username } });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo iniciar sesion' });
   }
@@ -44,7 +48,10 @@ router.get('/me', requireAuth, async (req, res) => {
     if (!sub) return res.status(401).json({ error: 'No autorizado' });
     const user = await User.findById(sub).lean();
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    res.json({ username: user.username, role: user.role, displayName: user.displayName || user.username });
+    const roles = Array.isArray(user.roles) && user.roles.length
+      ? user.roles
+      : (user.role === 'admin' ? ['gato'] : (user.role ? ['genin'] : []));
+    res.json({ username: user.username, roles, displayName: user.displayName || user.username });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo obtener el usuario' });
   }
@@ -118,15 +125,16 @@ router.post('/signup', async (req, res) => {
       username: uname,
       passwordHash: hash,
       role: 'user',
+      roles: ['genin'],
       displayName: nombre,
       name: nombre,
       email: correo,
       phone: celular,
       active: true,
     });
-    const payload = { sub: String(user._id), username: user.username, role: user.role };
+    const payload = { sub: String(user._id), username: user.username, roles: user.roles };
     const token = signToken(payload);
-    res.json({ token, user: { username: user.username, role: user.role, displayName: user.displayName || user.username } });
+    res.json({ token, user: { username: user.username, roles: user.roles, displayName: user.displayName || user.username } });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo registrar el usuario' });
   }

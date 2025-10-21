@@ -10,6 +10,7 @@ import { router as healthRouter } from './routes/health.js';
 import { formsApiRouter, formsWebRouter } from './routes/forms.js';
 import { router as authRouter } from './routes/auth.js';
 import { router as userRouter } from './routes/user.js';
+import { router as instructorRouter } from './routes/instructor.js';
 import { router as adminRouter } from './routes/admin.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +34,7 @@ export function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/user', userRouter);
+  app.use('/api/instructor', instructorRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/forms', formsApiRouter);
   app.use('/api', apiRouter);

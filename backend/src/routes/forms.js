@@ -42,6 +42,16 @@ formsApiRouter.get('/course', requireAdmin, async (_req, res) => {
   res.json(list);
 });
 
+formsApiRouter.delete('/course/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await CourseInquiry.deleteOne({ _id: id }).exec();
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo eliminar la solicitud' });
+  }
+});
+
 formsApiRouter.get('/course.csv', requireAdmin, async (_req, res) => {
   const list = await CourseInquiry.find().sort({ createdAt: -1 }).lean();
   const headers = [
@@ -76,6 +86,16 @@ formsApiRouter.post('/mission', async (req, res) => {
 formsApiRouter.get('/mission', requireAdmin, async (_req, res) => {
   const list = await MissionInquiry.find().sort({ createdAt: -1 }).lean();
   res.json(list);
+});
+
+formsApiRouter.delete('/mission/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await MissionInquiry.deleteOne({ _id: id }).exec();
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo eliminar la solicitud' });
+  }
 });
 
 formsApiRouter.get('/mission.csv', requireAdmin, async (_req, res) => {

@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Scanner TCP",
+    "description": "CLI de escaneo de puertos.",
+    "tags": ["node", "networking"],
+    "repoUrl": "https://github.com/your-org/scanner-tcp",
+    "demoUrl": "https://example.com/demos/scanner"
+  },
+  {
+    "name": "Lab Web",
+    "description": "Laboratorio OWASP dockerizado.",
+    "tags": ["docker", "web"],
+    "repoUrl": "https://github.com/your-org/lab-web",
+    "demoUrl": "https://example.com/demos/lab-web"
+  },
+  {
+    "name": "Wordlist Forge",
+    "description": "Herramienta para generar y combinar diccionarios de contraseñas.",
+    "tags": ["passwords", "tooling"],
+    "repoUrl": "https://github.com/your-org/wordlist-forge"
+  },
+  {
+    "name": "Blue Team Playbooks",
+    "description": "Playbooks de detección y respuesta para escenarios comunes.",
+    "tags": ["blue-team", "detections"]
+  }
+]
