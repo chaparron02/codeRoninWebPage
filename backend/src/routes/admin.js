@@ -6,7 +6,7 @@ import multer from 'multer';
 import { requireAdmin } from '../utils/auth.js';
 import { CourseInquiry, MissionInquiry } from '../models/inquiry.js';
 import { User } from '../models/user.js';
-import { readJSON, writeJSON } from '../storage/fileStore.js';
+import { loadModules, saveModules, sanitizeResource } from '../services/scrollsStore.js';
 
 export const router = Router();
 
@@ -92,22 +92,32 @@ router.post('/upload/image', uploadImg.single('file'), (req, res) => {
 });
 
 // Course modules JSON (kept for legacy)
-const MODULES_KEY = 'course_modules.json';
 router.get('/courses/modules', async (_req, res) => {
-  const list = await readJSON(MODULES_KEY, []);
+  const list = await loadModules();
   res.json(list);
 });
 router.post('/courses/modules', async (req, res) => {
   try {
-    const { title, description = '', order = 0, videoUrl = '' } = req.body || {};
+    const { title, description = '', order = 0, course = '', resource: inputResource } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title required' });
+    const resource = sanitizeResource(inputResource ?? req.body);
+    if (resource.type !== 'link' && !resource.url) return res.status(400).json({ error: 'resource required' });
     const now = new Date().toISOString();
-    const list = await readJSON(MODULES_KEY, []);
+    const list = await loadModules();
     const id = Math.random().toString(36).slice(2);
-    const item = { id, title, description, order: Number(order)||0, videoUrl, createdAt: now };
+    const item = {
+      id,
+      course: String(course || ''),
+      title: String(title),
+      description: String(description),
+      order: Number(order) || 0,
+      resource,
+      createdAt: now,
+      updatedAt: now,
+    };
     list.push(item);
-    list.sort((a,b)=> (a.order||0)-(b.order||0) || a.createdAt.localeCompare(b.createdAt));
-    await writeJSON(MODULES_KEY, list);
+    list.sort((a,b)=> (a.course||'').localeCompare(b.course||'') || (a.order||0)-(b.order||0) || (a.createdAt||'').localeCompare(b.createdAt||''));
+    await saveModules(list);
     res.status(201).json(item);
   } catch {
     res.status(500).json({ error: 'Cannot create module' });
@@ -116,18 +126,24 @@ router.post('/courses/modules', async (req, res) => {
 router.put('/courses/modules/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const list = await readJSON(MODULES_KEY, []);
+    const list = await loadModules();
     const idx = list.findIndex(x => x.id === id);
     if (idx < 0) return res.status(404).json({ error: 'Not found' });
     const item = list[idx];
-    const { title, description, order, videoUrl } = req.body || {};
+    const { title, description, order, resource: inputResource, course } = req.body || {};
     if (title != null) item.title = String(title);
     if (description != null) item.description = String(description);
     if (order != null) item.order = Number(order)||0;
-    if (videoUrl != null) item.videoUrl = String(videoUrl);
+    if (course != null) item.course = String(course);
+    if (inputResource != null) {
+      const resource = sanitizeResource(inputResource ?? req.body);
+      if (resource.type !== 'link' && !resource.url) return res.status(400).json({ error: 'resource required' });
+      item.resource = resource;
+    }
+    item.updatedAt = new Date().toISOString();
     list[idx] = item;
-    list.sort((a,b)=> (a.order||0)-(b.order||0) || a.createdAt.localeCompare(b.createdAt));
-    await writeJSON(MODULES_KEY, list);
+    list.sort((a,b)=> (a.course||'').localeCompare(b.course||'') || (a.order||0)-(b.order||0) || (a.createdAt||'').localeCompare(b.createdAt||''));
+    await saveModules(list);
     res.json(item);
   } catch {
     res.status(500).json({ error: 'Cannot update module' });
@@ -136,10 +152,10 @@ router.put('/courses/modules/:id', async (req, res) => {
 router.delete('/courses/modules/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const list = await readJSON(MODULES_KEY, []);
+    const list = await loadModules();
     const next = list.filter(x => x.id !== id);
     if (next.length === list.length) return res.status(404).json({ error: 'Not found' });
-    await writeJSON(MODULES_KEY, next);
+    await saveModules(next);
     res.status(204).end();
   } catch {
     res.status(500).json({ error: 'Cannot delete module' });

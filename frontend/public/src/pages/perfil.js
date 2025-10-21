@@ -19,16 +19,27 @@ export async function ProfilePage() {
   const isInstructor = Array.isArray(roles) && (roles.includes('sensei') || roles.includes('gato'));
 
   const nav = document.getElementById('nav-links');
-  const classesLink = nav ? nav.querySelector('[data-id="nav-classes"]') : null;
+  const pergaminosLink = nav ? nav.querySelector('[data-id="nav-scrolls"]') : null;
+  const trainingLink = nav ? nav.querySelector('[data-id="nav-training"]') : null;
   if (nav) {
-    if (!classesLink && isInstructor) {
+    const hasTrainingAccess = Array.isArray(roles) && roles.some(r => ['gato','sensei','genin'].includes(r));
+    if (!pergaminosLink && isInstructor) {
       const link = document.createElement('a');
-      link.href = '/clases';
-      link.textContent = 'Clases';
-      link.setAttribute('data-id', 'nav-classes');
+      link.href = '/pergaminos';
+      link.textContent = 'Pergaminos';
+      link.setAttribute('data-id', 'nav-scrolls');
       nav.appendChild(link);
-    } else if (classesLink && !isInstructor) {
-      classesLink.remove();
+    } else if (pergaminosLink && !isInstructor) {
+      pergaminosLink.remove();
+    }
+    if (!trainingLink && hasTrainingAccess) {
+      const link = document.createElement('a');
+      link.href = '/entrenamientos';
+      link.textContent = 'Entrenamientos';
+      link.setAttribute('data-id', 'nav-training');
+      nav.appendChild(link);
+    } else if (trainingLink && !hasTrainingAccess) {
+      trainingLink.remove();
     }
   }
 

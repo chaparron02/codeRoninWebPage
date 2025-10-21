@@ -1012,7 +1012,7 @@ const routes = {
   'signup': SignupPage,
   'perfil': ProfilePage,
   'admin': AdminPage,
-  'clases': InstructorPage,
+  'pergaminos': InstructorPage,
   // Aliases
   'cursos': CoursesPage,
   'servicios': ServicesPage,
@@ -1226,8 +1226,8 @@ async function ProfilePage() {
   }
   if (!classesLink && isInstructor) {
     const link = document.createElement('a');
-    link.href = '/clases';
-    link.textContent = 'Clases';
+    link.href = '/pergaminos';
+    link.textContent = 'pergaminos';
     link.setAttribute('data-id', 'nav-classes');
     nav.appendChild(link);
   } else if (classesLink && !isInstructor) {
@@ -1640,7 +1640,7 @@ async function AdminPage() {
 
 // Instructor page (full page for uploading modules)
 async function InstructorPage() {
-  const wrap = createEl('section', { className: 'section page', attrs: { id: 'clases' } });
+  const wrap = createEl('section', { className: 'section page', attrs: { id: 'pergaminos' } });
   const c = createEl('div', { className: 'container admin-container' });
   c.appendChild(createEl('h2', { className: 'section-title', text: 'Clases y Módulos' }));
 

@@ -11,7 +11,8 @@ const routes = {
   'login': async () => (await import('./pages/login.js')).LoginPage,
   'perfil': async () => (await import('./pages/perfil.js')).ProfilePage,
   'admin': async () => (await import('./pages/admin.js')).AdminPage,
-  'clases': async () => (await import('./pages/clases.js')).InstructorPage,
+  'pergaminos': async () => (await import('./pages/pergaminos.js')).PergaminosPage,
+  'entrenamientos': async () => (await import('./pages/entrenamiento.js')).EntrenamientoPage,
   'formulario': async () => (await import('./pages/formulario.js')).FormPage,
   'form-mision': async () => (await import('./pages/form-mision.js')).FormMisionPage,
 }

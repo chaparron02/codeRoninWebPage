@@ -115,9 +115,11 @@ export async function updateAuthNav() {
   const existing = nav.querySelector('a[data-id="nav-admin"]');
   const loginLink = nav.querySelector('a[data-id="nav-login"]');
   const profileLink = nav.querySelector('a[data-id="nav-profile"]');
-  const classesLink = nav.querySelector('a[data-id="nav-classes"]');
+  const scrollsLink = nav.querySelector('a[data-id="nav-scrolls"]');
+  const trainingLink = nav.querySelector('a[data-id="nav-training"]');
   const isAdmin = !!(me && Array.isArray(me.roles) && me.roles.includes('gato'));
   const isInstructor = !!(me && Array.isArray(me.roles) && (me.roles.includes('gato') || me.roles.includes('sensei')));
+  const hasTrainingAccess = !!(me && Array.isArray(me.roles) && me.roles.some(r => ['gato','sensei','genin'].includes(r)));
   try {
     const chip = document.getElementById('user-chip');
     if (chip) {
@@ -141,9 +143,24 @@ export async function updateAuthNav() {
   if (me && !profileLink) {
     const link = document.createElement('a'); link.href = '/perfil'; link.textContent = 'Perfil'; link.setAttribute('data-id', 'nav-profile'); nav.appendChild(link);
   } else if (!me && profileLink) { profileLink.remove(); }
-  if (isInstructor && !classesLink) {
-    const link = document.createElement('a'); link.href = '/clases'; link.textContent = 'Clases'; link.setAttribute('data-id', 'nav-classes'); nav.appendChild(link);
-  } else if (!isInstructor && classesLink) { classesLink.remove(); }
+  if (isInstructor && !scrollsLink) {
+    const link = document.createElement('a');
+    link.href = '/pergaminos';
+    link.textContent = 'Pergaminos';
+    link.setAttribute('data-id', 'nav-scrolls');
+    nav.appendChild(link);
+  } else if (!isInstructor && scrollsLink) {
+    scrollsLink.remove();
+  }
+  if (hasTrainingAccess && !trainingLink) {
+    const link = document.createElement('a');
+    link.href = '/entrenamientos';
+    link.textContent = 'Entrenamientos';
+    link.setAttribute('data-id', 'nav-training');
+    nav.appendChild(link);
+  } else if (!hasTrainingAccess && trainingLink) {
+    trainingLink.remove();
+  }
 }
 
 export function showLoaderOnce() {
@@ -161,4 +178,3 @@ export function showLoaderOnce() {
     try { localStorage.setItem('cr_seen_loader', '1'); } catch {}
   }, 1200);
 }
-
