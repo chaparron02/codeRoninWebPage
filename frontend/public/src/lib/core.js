@@ -184,18 +184,45 @@ export async function updateAuthNav() {
   }
 }
 
-export function showLoaderOnce() {
-  try { if (localStorage.getItem('cr_seen_loader')) return; } catch {}
-  const overlay = createEl('div', { className: 'loader-overlay', attrs: { role: 'status', 'aria-live': 'polite' } });
+let loaderOverlay = null;
+let loaderHideTimer = null;
+let loaderVisibleAt = 0;
+
+function ensureLoaderOverlay() {
+  if (loaderOverlay) return loaderOverlay;
+  loaderOverlay = createEl('div', { className: 'loader-overlay', attrs: { role: 'status', 'aria-live': 'polite' } });
   const inner = createEl('div', { className: 'loader-inner' });
   const ring = createEl('div', { className: 'loader-ring' });
   const symbol = createEl('div', { className: 'loader-symbol', text: 'cr' });
   inner.append(ring, symbol);
-  overlay.appendChild(inner);
-  document.body.appendChild(overlay);
-  setTimeout(() => {
-    overlay.classList.add('hide');
-    setTimeout(() => overlay.remove(), 450);
-    try { localStorage.setItem('cr_seen_loader', '1'); } catch {}
-  }, 1200);
+  loaderOverlay.appendChild(inner);
+  document.body.appendChild(loaderOverlay);
+  return loaderOverlay;
+}
+
+export function showLoader() {
+  const overlay = ensureLoaderOverlay();
+  if (loaderHideTimer) {
+    clearTimeout(loaderHideTimer);
+    loaderHideTimer = null;
+  }
+  overlay.classList.remove('is-leaving');
+  void overlay.offsetWidth;
+  overlay.classList.add('is-active');
+  loaderVisibleAt = performance.now();
+}
+
+export function hideLoader({ minimum = 400, fade = 420 } = {}) {
+  const overlay = ensureLoaderOverlay();
+  const now = performance.now();
+  const elapsed = loaderVisibleAt ? now - loaderVisibleAt : minimum;
+  const delay = Math.max(0, minimum - elapsed);
+  if (loaderHideTimer) clearTimeout(loaderHideTimer);
+  loaderHideTimer = setTimeout(() => {
+    overlay.classList.add('is-leaving');
+    setTimeout(() => {
+      overlay.classList.remove('is-active');
+      overlay.classList.remove('is-leaving');
+    }, fade);
+  }, delay);
 }

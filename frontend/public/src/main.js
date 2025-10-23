@@ -1,5 +1,5 @@
 // entrypoint module that wires routes to per-page modules (ascii-only)
-import { $, setActiveNav, showLoaderOnce, updateAuthNav, navigate } from './lib/core.js'
+import { setActiveNav, showLoader, hideLoader, updateAuthNav, navigate } from './lib/core.js'
 
 // Dynamic imports so each page loads in isolation.
 const routes = {
@@ -30,6 +30,9 @@ export async function render() {
   const route = parseRoute();
   setActiveNav(route);
   const root = document.getElementById('root');
+  if (!root) return;
+  showLoader();
+  root.setAttribute('aria-busy', 'true');
   root.innerHTML = '';
   try {
     const loader = routes[route] || routes['/'];
@@ -43,12 +46,14 @@ export async function render() {
     fallback.appendChild(document.createElement('p')).textContent = 'Intenta navegar a otra seccion mientras resolvemos el problema.';
     root.appendChild(fallback);
     try { console.error('Render error:', err); } catch {}
+  } finally {
+    hideLoader({ minimum: 480 });
+    root.removeAttribute('aria-busy');
   }
 }
 
 window.addEventListener('popstate', render);
 window.addEventListener('DOMContentLoaded', () => {
-  showLoaderOnce();
   render();
   updateAuthNav();
   document.addEventListener('click', (e) => {

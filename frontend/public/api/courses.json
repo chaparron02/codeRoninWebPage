@@ -1,42 +1,115 @@
 [
   {
-    "title": "Hacking Ético",
-    "description": "Fundamentos legales y éticos, metodología de pruebas (recon, explotación controlada), reporte profesional y comunicación con negocio.",
-    "tags": ["pentesting", "ética", "lab", "8 semanas"],
-    "topics": ["Marco legal y alcance", "OSINT y Recon", "Escaneo y enumeración", "Explotación controlada", "Post-explotación básica", "Reporte con evidencias"],
-    "skills": ["Metodología de pentesting", "Uso de herramientas", "Gestión y priorización de hallazgos", "Buenas prácticas de reporte"],
-    "outcomes": "Identificar vulnerabilidades con impacto y priorizar su mitigación, documentando con evidencias claras.",
+    "title": "Hacking Etico",
+    "description": "Metodologia ofensiva completa con enfoque profesional y reportes accionables.",
+    "tags": [
+      "pentesting",
+      "ofensiva",
+      "labs"
+    ],
+    "skills": [
+      "Metodologia OSSTMM/OWASP",
+      "Recon y enumeracion",
+      "Escalada controlada",
+      "Reporte ejecutivo y tecnico"
+    ],
+    "outcome": "Guiar un pentest de punta a punta documentando hallazgos con impacto claro.",
+    "level": "Intermedio",
+    "duration": "8 semanas",
+    "price": "420000",
+    "link": "https://pay.coderonin.co/hacking-etico",
     "image": "/assets/material/ninja1.webp",
-    "url": "https://example.com/curso-hacking-etico"
+    "modalidad": "virtual",
+    "modules": [
+      "Modulo 1 - Fundamentos y planeacion",
+      "Modulo 2 - Recon y OSINT",
+      "Modulo 3 - Enumeracion y mapping",
+      "Modulo 4 - Explotacion controlada",
+      "Modulo 5 - Post-explotacion",
+      "Modulo 6 - Reporte y presentacion"
+    ]
   },
   {
     "title": "Cybersecurity Fundamentals",
-    "description": "Confidencialidad, integridad y disponibilidad; amenazas, riesgo y controles; marcos comunes y gobierno básico.",
-    "tags": ["fundamentos", "riesgo", "4 semanas"],
-    "topics": ["Modelos de seguridad", "Amenazas y riesgos", "Controles y marcos", "Gobierno y cumplimiento"],
-    "skills": ["Pensamiento de riesgo", "Lenguaje común de seguridad", "Priorización de controles"],
-    "outcomes": "Comprender el panorama de amenazas y priorizar controles que reduzcan riesgo efectivo.",
+    "description": "Gobierno, gestion de riesgos y controles esenciales para despegar una estrategia de seguridad.",
+    "tags": [
+      "fundamentos",
+      "gobierno"
+    ],
+    "skills": [
+      "Modelos CIA y Zero Trust",
+      "Mapeo de amenazas y riesgos",
+      "Diseno de controles base",
+      "Lectura de marcos (ISO, NIST)"
+    ],
+    "outcome": "Priorizar controles y comunicar riesgos de forma efectiva al negocio.",
+    "level": "Inicial",
+    "duration": "4 semanas",
+    "price": "260000",
+    "link": "https://pay.coderonin.co/cyber-fundamentals",
     "image": "/assets/material/dojo1.webp",
-    "url": "https://example.com/curso-cyber-fundamentals"
+    "modalidad": "virtual",
+    "modules": [
+      "Modulo 1 - Panorama de amenazas",
+      "Modulo 2 - Gestion de riesgo",
+      "Modulo 3 - Controles y marcos",
+      "Modulo 4 - Roadmap y gobierno"
+    ]
   },
   {
     "title": "Seguridad en Redes",
-    "description": "Diseño seguro, segmentación, firewalls/VPN, monitoreo y respuesta; visibilidad y telemetría.",
-    "tags": ["redes", "segmentación", "6 semanas"],
-    "topics": ["Modelo OSI y amenazas", "Diseño seguro de redes", "Controles en perímetro y nube", "Detección y respuesta"],
-    "skills": ["Topologías seguras", "Endurecimiento de red", "Monitoreo y alertas"],
-    "outcomes": "Diseñar y operar redes seguras reduciendo superficie de ataque y mejorando visibilidad operacional.",
+    "description": "Arquitecturas defensivas modernas, segmentacion, monitoreo y respuesta.",
+    "tags": [
+      "redes",
+      "defensiva"
+    ],
+    "skills": [
+      "Diseno de segmentacion",
+      "Hardening de perimetro y nube",
+      "Telemetria y monitoreo",
+      "Playbooks de respuesta"
+    ],
+    "outcome": "Disenar y operar redes endurecidas con visibilidad y tiempos de respuesta medibles.",
+    "level": "Intermedio",
+    "duration": "6 semanas",
+    "price": "320000",
+    "link": "https://pay.coderonin.co/seguridad-redes",
     "image": "/assets/material/ninja3.webp",
-    "url": "https://example.com/curso-seguridad-redes"
+    "modalidad": "virtual",
+    "modules": [
+      "Modulo 1 - Arquitectura segura",
+      "Modulo 2 - Segmentacion y zero trust",
+      "Modulo 3 - Controles perimetrales",
+      "Modulo 4 - Telemetria y monitoreo",
+      "Modulo 5 - Respuesta y automatizacion"
+    ]
   },
   {
-    "title": "Análisis Forense Digital",
-    "description": "Cadena de custodia, adquisición, parsing y timeline; artefactos clave y reporte sólido.",
-    "tags": ["forense", "incidentes", "6 semanas"],
-    "topics": ["Cadena de custodia", "Adquisición y verificación", "Artefactos del sistema", "Análisis de logs y timeline"],
-    "skills": ["Preservación y parsing de evidencia", "Reconstrucción de eventos", "Documentación forense"],
-    "outcomes": "Investigar incidentes, reconstruir eventos y documentar con rigor técnico/ legal.",
+    "title": "Analisis Forense Digital",
+    "description": "Procesos DFIR de punta a punta: preservacion, parsing y construccion de timeline.",
+    "tags": [
+      "forense",
+      "incidentes"
+    ],
+    "skills": [
+      "Cadena de custodia",
+      "Parsing de artefactos",
+      "Reconstruccion de eventos",
+      "Reporte forense"
+    ],
+    "outcome": "Responder incidentes documentando evidencias defensibles tecnica y legalmente.",
+    "level": "Avanzado",
+    "duration": "6 semanas",
+    "price": "340000",
+    "link": "https://pay.coderonin.co/analisis-forense",
     "image": "/assets/material/ninja4.webp",
-    "url": "https://example.com/curso-analisis-forense"
+    "modalidad": "virtual",
+    "modules": [
+      "Modulo 1 - Cadena de custodia",
+      "Modulo 2 - Adquisicion y verificacion",
+      "Modulo 3 - Artefactos clave",
+      "Modulo 4 - Timeline y correlacion",
+      "Modulo 5 - Reporte forense"
+    ]
   }
 ]

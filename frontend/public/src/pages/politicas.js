@@ -53,7 +53,6 @@ export async function PoliticasPage() {
 
   root.appendChild(buildSection('Soporte posventa', [
     [
-      'Emitimos facturas electronicas colombianas a nombre del emprendimiento o de los fundadores segun el esquema tributario vigente.',
       'Los pagos se realizan por transferencia bancaria, pasarela local o criptomonedas previo acuerdo.',
       'Ofrecemos mantenimiento posventa para los hardenings y consultorias por treinta dias sin costo adicional.',
       'Cualquier inconformidad se escala a soporte@coderonin.co o al canal de WhatsApp corporativo.'

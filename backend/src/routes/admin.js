@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { requireAdmin } from '../utils/auth.js';
 import { CourseInquiry, MissionInquiry } from '../models/inquiry.js';
+import { Course } from '../models/course.js';
 import { User } from '../models/user.js';
 import { Report } from '../models/report.js';
 import { loadModules, saveModules, sanitizeResource } from '../services/scrollsStore.js';
@@ -26,6 +27,76 @@ router.get('/stats', async (_req, res) => {
     res.json({ coursesCount, missionsCount, usersCount, lastCourse, lastMission });
   } catch (err) {
     res.status(500).json({ error: 'No se pudieron obtener estadisticas' });
+  }
+});
+
+router.post('/courses', async (req, res) => {
+  try {
+    const {
+      title,
+      description = '',
+      modalidad = 'virtual',
+      tags = [],
+      skills = [],
+      outcome = '',
+      level = '',
+      duration = '',
+      price,
+      link,
+      image = '',
+      category,
+      modules = [],
+    } = req.body || {};
+    if (!title || typeof title !== 'string') return res.status(400).json({ error: 'Titulo requerido' });
+    if (link != null && typeof link !== 'string') return res.status(400).json({ error: 'Link de pago invalido' });
+    const cleanLink = typeof link === 'string' ? link.trim() : '';
+    if (cleanLink && !/^https?:\/\//i.test(cleanLink)) {
+      return res.status(400).json({ error: 'El link debe iniciar con http o https' });
+    }
+    const payload = {
+      title: title.trim(),
+      description: description || '',
+      modalidad: ['virtual', 'presencial'].includes(modalidad) ? modalidad : 'virtual',
+      tags: Array.isArray(tags) ? tags.map(t => String(t)).filter(Boolean) : [],
+      skills: Array.isArray(skills) ? skills.map(t => String(t)).filter(Boolean) : [],
+      outcome: outcome || '',
+      level: level || '',
+      duration: duration || '',
+      price: price != null && price !== '' ? String(price) : undefined,
+      link: cleanLink || undefined,
+      image: image || '',
+      category: category || undefined,
+    };
+    const doc = await Course.create(payload);
+    if (Array.isArray(modules) && modules.length) {
+      const modList = await loadModules();
+      const hasExisting = modList.some(m => (m.course || '') === payload.title);
+      if (!hasExisting) {
+        const now = new Date().toISOString();
+        const newEntries = modules
+          .map(name => String(name || '').trim())
+          .filter(Boolean)
+          .map((name, idx) => ({
+            id: Math.random().toString(36).slice(2),
+            course: payload.title,
+            title: name,
+            description: '',
+            order: idx + 1,
+            resource: { type: 'link', url: '', name },
+            createdAt: now,
+            updatedAt: now,
+          }));
+        if (newEntries.length) {
+          modList.push(...newEntries);
+          modList.sort((a, b) => (a.course || '').localeCompare(b.course || '') || (a.order || 0) - (b.order || 0));
+          await saveModules(modList);
+        }
+      }
+    }
+    const fresh = await Course.findById(doc._id).lean();
+    res.status(201).json(fresh || doc.toObject());
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo crear el curso' });
   }
 });
 

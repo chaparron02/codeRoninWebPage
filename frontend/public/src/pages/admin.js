@@ -82,12 +82,13 @@ export async function AdminPage() {
   const btnDash = createEl('button', { className: 'btn active', text: 'Dashboard' });
   const btnReq = createEl('button', { className: 'btn', text: 'Solicitudes' });
   const btnMissions = createEl('button', { className: 'btn', text: 'Misiones' });
+  const btnCourses = createEl('button', { className: 'btn', text: 'Nuevos pergaminos' });
   const btnUsers = createEl('button', { className: 'btn', text: 'Usuarios' });
-  tabs.append(btnDash, btnReq, btnMissions, btnUsers);
+  tabs.append(btnDash, btnReq, btnMissions, btnCourses, btnUsers);
   root.appendChild(tabs);
 
   const split = createEl('div', { className: 'admin-split' });
-  split.style.setProperty('--left', '320px');
+  split.style.setProperty('--left', '440px');
   const left = createEl('div', { className: 'admin-pane left' });
   const handle = createEl('div', { className: 'split-handle', attrs: { role: 'separator', 'aria-orientation': 'vertical' } });
   const right = createEl('div', { className: 'admin-pane right' });
@@ -95,11 +96,12 @@ export async function AdminPage() {
   root.appendChild(split);
 
   handle.addEventListener('mousedown', (e) => {
+    if (handle.classList.contains('hidden')) return;
     e.preventDefault();
     const startX = e.clientX;
-    const startLeft = parseInt(getComputedStyle(split).getPropertyValue('--left')) || 320;
+    const startLeft = parseInt(getComputedStyle(split).getPropertyValue('--left')) || 440;
     const onMove = (ev) => {
-      const next = Math.max(220, Math.min(600, startLeft + (ev.clientX - startX)));
+      const next = Math.max(320, Math.min(720, startLeft + (ev.clientX - startX)));
       split.style.setProperty('--left', `${next}px`);
     };
     const onUp = () => {
@@ -110,13 +112,30 @@ export async function AdminPage() {
     document.addEventListener('mouseup', onUp);
   });
 
+  function setLayout({ showRight = true, leftWidth = 440, expandRight = false } = {}) {
+    const width = Math.max(320, Math.min(720, leftWidth));
+    split.style.setProperty('--left', `${width}px`);
+    if (showRight) {
+      split.classList.remove('single');
+      handle.classList.remove('hidden');
+      right.classList.remove('hidden');
+      if (expandRight) right.classList.add('expand'); else right.classList.remove('expand');
+    } else {
+      split.classList.add('single');
+      handle.classList.add('hidden');
+      right.classList.remove('expand');
+      right.classList.add('hidden');
+    }
+  }
+
   function setTab(btn) {
-    [btnDash, btnReq, btnMissions, btnUsers].forEach(b => b.classList.remove('active'));
+    [btnDash, btnReq, btnMissions, btnCourses, btnUsers].forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
 
   async function showDashboard() {
     setTab(btnDash);
+    setLayout({ showRight: true, leftWidth: 420, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Resumen' }), info('Metricas generales del sistema.'));
@@ -134,6 +153,7 @@ export async function AdminPage() {
 
   async function showRequests() {
     setTab(btnReq);
+    setLayout({ showRight: true, leftWidth: 400, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Solicitudes' }), info('Revisa formularios recibidos.'));
@@ -212,6 +232,7 @@ export async function AdminPage() {
 
   async function showMissions() {
     setTab(btnMissions);
+    setLayout({ showRight: true, leftWidth: 420, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Misiones' }), info('Crea misiones y asigna shinobi.'));
@@ -371,8 +392,201 @@ export async function AdminPage() {
     renderList();
   }
 
+  async function showCourseCreator() {
+    setTab(btnCourses);
+    setLayout({ showRight: true, leftWidth: 520, expandRight: true });
+    left.innerHTML = '';
+    right.innerHTML = '';
+
+    const formCard = createEl('div', { className: 'card admin-course-editor' });
+    formCard.append(
+      createEl('h3', { text: 'Nuevo curso virtual' }),
+      info('Completa los datos base. Los modulos quedan listos en Pergaminos para agregar videos o material.')
+    );
+
+    const form = createEl('form', { className: 'cr-form course-form', attrs: { autocomplete: 'off' } });
+
+    const addRow = (label, node) => {
+      const row = createEl('div', { className: 'form-row' });
+      row.append(createEl('label', { text: label }));
+      row.appendChild(node);
+      form.appendChild(row);
+      return node;
+    };
+
+    const inputTitle = addRow('Titulo', createEl('input', { attrs: { type: 'text', required: '', placeholder: 'Hacking Etico' } }));
+    const inputDesc = addRow('Descripcion', createEl('textarea', { attrs: { rows: '4', placeholder: 'Descripcion corta del curso.' } }));
+
+    const selectMod = document.createElement('select');
+    selectMod.className = 'select';
+    selectMod.append(new Option('Virtual', 'virtual', true, true), new Option('Presencial', 'presencial'));
+    addRow('Modalidad', selectMod);
+
+    const inputLevel = addRow('Nivel', createEl('input', { attrs: { type: 'text', placeholder: 'Intermedio' } }));
+    const inputDuration = addRow('Duracion', createEl('input', { attrs: { type: 'text', placeholder: '6 semanas' } }));
+    const inputPrice = addRow('Precio (COP)', createEl('input', { attrs: { type: 'text', placeholder: '320000' } }));
+    const inputLink = addRow('Link de pago', createEl('input', { attrs: { type: 'url', placeholder: 'https://pay.coderonin.co/mi-curso' } }));
+    form.appendChild(info('Si aun no tienes enlace de pago, deja el campo vacio para mostrar "Proximamente" en Dojo.'));
+
+    const inputTags = addRow('Tags', createEl('textarea', { attrs: { rows: '2', placeholder: 'pentesting, ofensiva, labs' } }));
+    const inputSkills = addRow('Habilidades', createEl('textarea', { attrs: { rows: '3', placeholder: 'Una habilidad por linea' } }));
+    const inputOutcome = addRow('Impacto', createEl('textarea', { attrs: { rows: '3', placeholder: 'Describe el resultado o promesa del curso.' } }));
+    const inputModules = addRow('Modulos', createEl('textarea', { attrs: { rows: '4', placeholder: 'Modulo 1 - Introduccion' } }));
+    form.appendChild(info('Los modulos se crean como pergaminos vacios. Completa videos o recursos desde la seccion Pergaminos.'));
+
+    const imgRow = createEl('div', { className: 'form-row course-image-row' });
+    imgRow.append(createEl('label', { text: 'Imagen' }));
+    const imgField = createEl('div', { className: 'course-image-field' });
+    const imgPreview = createEl('div', { className: 'course-image-preview', text: 'Sin imagen' });
+    const inputImage = createEl('input', { attrs: { type: 'text', placeholder: 'https://...' } });
+    const fileInput = createEl('input', { attrs: { type: 'file', accept: 'image/*' } });
+    const uploadBtn = createEl('button', { className: 'btn btn-sm', text: 'Subir archivo', attrs: { type: 'button' } });
+    imgField.append(imgPreview, inputImage, fileInput, uploadBtn);
+    imgRow.appendChild(imgField);
+    form.appendChild(imgRow);
+
+    const actions = createEl('div', { className: 'form-actions' });
+    const submitBtn = createEl('button', { className: 'btn btn-primary', text: 'Crear curso' });
+    actions.appendChild(submitBtn);
+    form.appendChild(actions);
+
+    formCard.appendChild(form);
+    left.appendChild(formCard);
+
+    const parseList = (value) => value.split(/\r?\n|,/).map(item => item.trim()).filter(Boolean);
+    const formatPrice = (value) => {
+      if (value == null || value === '') return 'n/d';
+      const num = Number(String(value).replace(/[^0-9.]/g, ''));
+      if (!Number.isFinite(num)) return value;
+      try {
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
+      } catch {
+        return `$${num}`;
+      }
+    };
+
+    const updatePreview = () => {
+      imgPreview.innerHTML = '';
+      const url = (inputImage.value || '').trim();
+      if (url) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = 'preview';
+        img.loading = 'lazy';
+        imgPreview.appendChild(img);
+      } else {
+        imgPreview.textContent = 'Sin imagen';
+      }
+    };
+
+    inputImage.addEventListener('input', updatePreview);
+
+    uploadBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        showModal('Selecciona un archivo de imagen.', { title: 'Atencion' });
+        return;
+      }
+      uploadBtn.disabled = true;
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const token = getToken();
+        const headers = token ? { authorization: `Bearer ${token}` } : {};
+        const res = await fetch('/api/admin/upload/image', { method: 'POST', headers, body: fd });
+        if (!res.ok) throw new Error('No se pudo subir la imagen');
+        const data = await res.json();
+        inputImage.value = data.url || '';
+        updatePreview();
+      } catch (err) {
+        showModal(err.message || 'Error al subir imagen', { title: 'Error' });
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    });
+
+    async function loadCourses() {
+      right.innerHTML = '';
+      const summary = createEl('div', { className: 'card admin-course-summary' });
+      summary.append(createEl('h3', { text: 'Cursos publicados' }), info('Aparecen automaticamente en Dojo y se pueden editar en Pergaminos.'));
+      const data = await getJSON('/api/courses.json', []);
+      if (!Array.isArray(data) || !data.length) {
+        summary.appendChild(createEl('div', { className: 'course-empty', text: 'Aun no hay cursos registrados.' }));
+        right.appendChild(summary);
+        return;
+      }
+      const list = createEl('div', { className: 'course-admin-list' });
+      data.forEach(course => {
+        const card = createEl('div', { className: 'admin-course-card' });
+        card.appendChild(createEl('h4', { text: course.title || 'Curso' }));
+        card.appendChild(createEl('p', { className: 'muted small', text: `Modalidad: ${course.modalidad || 'virtual'} · Nivel: ${course.level || 'n/d'} · Duracion: ${course.duration || 'n/d'}` }));
+        card.appendChild(createEl('p', { className: 'muted small', text: `Valor: ${formatPrice(course.price)}` }));
+        const linkWrap = createEl('div', { className: 'course-admin-link' });
+        const hasLink = Boolean(course.link);
+        const anchor = createEl('a', { text: hasLink ? 'Ver link de pago' : 'Proximamente', attrs: hasLink ? { href: course.link, target: '_blank', rel: 'noopener noreferrer' } : {} });
+        if (!hasLink) anchor.classList.add('disabled');
+        linkWrap.appendChild(anchor);
+        card.appendChild(linkWrap);
+        card.appendChild(createEl('p', { className: 'muted tiny', text: 'Gestiona contenidos detallados desde Pergaminos.' }));
+        list.appendChild(card);
+      });
+      summary.appendChild(list);
+      right.appendChild(summary);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      try {
+        const title = inputTitle.value.trim();
+        const link = inputLink.value.trim();
+        if (!title) throw new Error('El titulo es obligatorio');
+        if (!link) throw new Error('El link de pago es obligatorio');
+        const payload = {
+          title,
+          description: inputDesc.value.trim(),
+          modalidad: selectMod.value,
+          level: inputLevel.value.trim(),
+          duration: inputDuration.value.trim(),
+          price: inputPrice.value.trim(),
+          link,
+          image: inputImage.value.trim(),
+          tags: parseList(inputTags.value),
+          skills: parseList(inputSkills.value),
+          modules: parseList(inputModules.value),
+          outcome: inputOutcome.value.trim(),
+        };
+        const headers = { 'content-type': 'application/json' };
+        const token = getToken();
+        if (token) headers.authorization = `Bearer ${token}`;
+        const res = await fetch('/api/admin/courses', { method: 'POST', headers, body: JSON.stringify(payload) });
+        if (!res.ok) {
+          let message = 'No se pudo crear el curso';
+          try {
+            const err = await res.json();
+            message = err?.error || message;
+          } catch {}
+          throw new Error(message);
+        }
+        showModal('Curso creado. Revisa Pergaminos para agregar contenido.', { title: 'Listo' });
+        form.reset();
+        updatePreview();
+        await loadCourses();
+      } catch (err) {
+        showModal(err.message || 'Error al crear el curso', { title: 'Error' });
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    updatePreview();
+    await loadCourses();
+  }
+
   async function showUsers() {
     setTab(btnUsers);
+    setLayout({ showRight: true, leftWidth: 420, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Usuarios' }), info('Actualiza roles y accesos manuales.'));
@@ -526,6 +740,7 @@ export async function AdminPage() {
   btnDash.addEventListener('click', showDashboard);
   btnReq.addEventListener('click', showRequests);
   btnMissions.addEventListener('click', showMissions);
+  btnCourses.addEventListener('click', showCourseCreator);
   btnUsers.addEventListener('click', showUsers);
 
   await showDashboard();
