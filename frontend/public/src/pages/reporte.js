@@ -59,6 +59,7 @@ export async function ReportePage() {
 
   const token = getToken();
   let reports = await getJSON('/api/reports', []);
+  const searchId = new URL(location.href).searchParams.get('id');
   let activeId = null;
 
   function buildProgressBar(value = 0) {
@@ -280,7 +281,8 @@ export async function ReportePage() {
 
   renderList();
   if (reports && reports.length) {
-    await loadDetail(reports[0].id);
+    const first = searchId && reports.some(r => r.id === searchId) ? searchId : reports[0].id;
+    await loadDetail(first);
   }
 
   return wrap;

@@ -574,3 +574,64 @@ body::before, body::after { display: none; }
 .mission-list { display: grid; gap: 14px; }
 .mission-card { border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.25); display: grid; gap: 8px; }
 .mission-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+\n/* About page refresh */\n.about-page .section-title { margin-bottom: 18px; }\n.about-shell { display: grid; gap: 32px; }\n.about-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; padding: 24px; border-radius: 18px; border: 1px solid rgba(0,229,255,0.25); background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(255,39,71,0.08)); box-shadow: var(--glow); }\n.about-hero-text { display: grid; gap: 16px; }\n.about-hero-text h2 { margin: 0; font-size: 32px; }\n.about-hero-text .muted { max-width: 520px; }\n.about-hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }\n.about-stat { padding: 14px; border-radius: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); text-align: center; }\n.about-stat-value { font-size: 20px; font-weight: 700; display: block; }\n.about-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }\n.about-hero-media { display: grid; place-items: center; }\n.about-hero-video { width: 100%; max-width: 320px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); }\n.about-section { display: grid; gap: 18px; }\n.about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }\n.about-card { padding: 18px; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; background: rgba(0,0,0,0.25); display: grid; gap: 8px; min-height: 160px; }\n.about-card h4 { margin: 0; font-size: 18px; }\n.about-tracks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }\n.about-track-card { border: 1px solid rgba(0,229,255,0.2); border-radius: 14px; padding: 18px; background: rgba(0,0,0,0.25); display: grid; gap: 10px; min-height: 200px; }\n.about-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }\n.about-timeline { margin: 0; padding-left: 18px; display: grid; gap: 10px; }\n.about-timeline-item { border-left: 2px solid rgba(0,229,255,0.35); padding-left: 12px; position: relative; }\n.about-timeline-year { font-weight: 700; display: block; color: var(--cyan); margin-bottom: 4px; }\n.about-cta { border: 1px solid rgba(255,255,255,0.18); border-radius: 16px; padding: 20px; background: rgba(0,0,0,0.3); display: grid; gap: 12px; text-align: left; }\n.about-cta-links { display: flex; flex-wrap: wrap; gap: 12px; }\n.about-cta-links a { padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(0,229,255,0.25); text-decoration: none; color: var(--text); background: rgba(0,229,255,0.08); }\n\n/* Policy page */\n.policy-shell { display: grid; gap: 24px; }\n.policy-shell .lead { max-width: 760px; }\n.policy-section { border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 20px; background: rgba(0,0,0,0.3); display: grid; gap: 10px; }\n.policy-section h3 { margin: 0; font-size: 20px; }\n.policy-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }\n
+\n/* Mission admin cards */\n.mission-list { display: grid; gap: 16px; }\n.mission-card { border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 18px; background: rgba(0,0,0,0.25); display: grid; gap: 8px; }\n.mission-card h4 { margin: 0; font-size: 18px; }\n.mission-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }\n
+
+/* About page refresh */
+.about-page .section-title { margin-bottom: 18px; }
+.about-shell { display: grid; gap: 32px; }
+.about-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; padding: 24px; border-radius: 18px; border: 1px solid rgba(0,229,255,0.25); background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(255,39,71,0.08)); box-shadow: var(--glow); animation: fadeRise .9s ease-out; }
+.about-hero-text { display: grid; gap: 16px; }
+.about-hero-text h2 { margin: 0; font-size: 32px; }
+.about-hero-text .muted { max-width: 520px; }
+.about-hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.about-stat { padding: 14px; border-radius: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); text-align: center; animation: floatPulse 6s ease-in-out infinite; }
+.about-stat-value { font-size: 20px; font-weight: 700; display: block; }
+.about-stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.about-hero-media { display: grid; place-items: center; }
+.about-hero-video { width: 100%; max-width: 320px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); animation: floatPulse 8s ease-in-out infinite reverse; }
+.about-section { display: grid; gap: 18px; }
+.about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.about-card { padding: 18px; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; background: rgba(0,0,0,0.25); display: grid; gap: 8px; min-height: 160px; animation: glowTint 12s linear infinite; }
+.about-card h4 { margin: 0; font-size: 18px; }
+.about-tracks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.about-track-card { border: 1px solid rgba(0,229,255,0.2); border-radius: 14px; padding: 18px; background: rgba(0,0,0,0.25); display: grid; gap: 10px; min-height: 200px; animation: floatPulse 10s ease-in-out infinite alternate; }
+.about-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.about-timeline { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
+.about-timeline-item { border-left: 2px solid rgba(0,229,255,0.35); padding-left: 12px; position: relative; }
+.about-timeline-item::before { content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: rgba(0,229,255,0.6); left: -6px; top: 4px; box-shadow: 0 0 8px rgba(0,229,255,0.6); }
+.about-timeline-year { font-weight: 700; display: block; color: var(--cyan); margin-bottom: 4px; }
+.about-cta { border: 1px solid rgba(255,255,255,0.18); border-radius: 16px; padding: 20px; background: rgba(0,0,0,0.3); display: grid; gap: 12px; text-align: left; }
+.about-cta-links { display: flex; flex-wrap: wrap; gap: 12px; }
+.about-cta-links a { padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(0,229,255,0.25); text-decoration: none; color: var(--text); background: rgba(0,229,255,0.08); transition: transform .2s ease, box-shadow .2s ease; }
+.about-cta-links a:hover { transform: translateY(-2px) scale(1.02); box-shadow: var(--glow); }
+
+@keyframes floatPulse {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes glowTint {
+  0% { border-color: rgba(0,229,255,0.15); }
+  50% { border-color: rgba(255,39,71,0.2); }
+  100% { border-color: rgba(0,229,255,0.15); }
+}
+
+@keyframes fadeRise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Policy page */
+.policy-shell { display: grid; gap: 24px; }
+.policy-shell .lead { max-width: 760px; }
+.policy-section { border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 20px; background: rgba(0,0,0,0.3); display: grid; gap: 10px; }
+.policy-section h3 { margin: 0; font-size: 20px; }
+.policy-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+
+.about-events { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.about-event-card { padding: 18px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(7,10,15,0.8); display: grid; gap: 8px; transition: transform .2s ease, box-shadow .2s ease; }
+.about-event-card:hover { transform: translateY(-3px); box-shadow: var(--glow); }
+.about-event-card h4 { margin: 0; font-size: 18px; color: var(--cyan); }
+.about-ai { border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 18px; background: rgba(0,0,0,0.3); display: grid; gap: 8px; }

@@ -361,7 +361,7 @@ export async function AdminPage() {
           }
         });
 
-        const view = createEl('a', { className: 'btn btn-ghost btn-sm', text: 'Ver reporte', attrs: { href: '/reporte' } });
+        const view = createEl('a', { className: 'btn btn-ghost btn-sm', text: 'Ver reporte', attrs: { href: `/reporte?id=${encodeURIComponent(item.id)}` } });
         actions.append(shinobiSel, shogunSel, save, remove, view);
         card.appendChild(actions);
         listCard.appendChild(card);

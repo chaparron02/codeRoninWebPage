@@ -174,6 +174,14 @@ export async function updateAuthNav() {
   } else if (!hasReportAccess && reportLink) {
     reportLink.remove();
   }
+  const policyLink = nav.querySelector('a[data-id="nav-policy"]');
+  if (!policyLink) {
+    const link = document.createElement('a');
+    link.href = '/politicas';
+    link.textContent = 'Politicas';
+    link.setAttribute('data-id', 'nav-policy');
+    nav.appendChild(link);
+  }
 }
 
 export function showLoaderOnce() {

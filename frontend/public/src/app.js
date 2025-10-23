@@ -79,6 +79,7 @@ async function updateAuthNav() {
   const scrollsLink = nav.querySelector('a[data-id="nav-scrolls"]');
   const trainingLink = nav.querySelector('a[data-id="nav-training"]');
   const reportLink = nav.querySelector('a[data-id="nav-report"]');
+  const policyLink = nav.querySelector('a[data-id="nav-policy"]');
   const rawRoles = Array.isArray(me?.roles) ? me.roles : [];
   const roles = rawRoles.map(r => String(r || '').toLowerCase());
   const isAdmin = roles.includes('gato');
@@ -1256,6 +1257,13 @@ async function ProfilePage() {
     nav.appendChild(link);
   } else if (!hasReportAccess && reportLink) {
     reportLink.remove();
+  }
+  if (!policyLink) {
+    const link = document.createElement('a');
+    link.href = '/politicas';
+    link.textContent = 'Politicas';
+    link.setAttribute('data-id', 'nav-policy');
+    nav.appendChild(link);
   }
   const r1 = createEl('div', { className: 'form-row' });
   r1.append(createEl('label', { text: 'Nombre' }));
