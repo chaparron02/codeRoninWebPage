@@ -12,6 +12,7 @@ import { router as authRouter } from './routes/auth.js';
 import { router as userRouter } from './routes/user.js';
 import { router as instructorRouter } from './routes/instructor.js';
 import { router as adminRouter } from './routes/admin.js';
+import { router as reportsRouter } from './routes/reports.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ export function createApp() {
   app.use('/api/user', userRouter);
   app.use('/api/instructor', instructorRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/reports', reportsRouter);
   app.use('/api/forms', formsApiRouter);
   app.use('/api', apiRouter);
 
@@ -44,7 +46,7 @@ export function createApp() {
 
   // Direct SPA routes -> serve index.html (no hash routing)
   const indexPath = path.join(FRONTEND_DIR, 'index.html');
-  const spaRoutes = ['/','/login','/signup','/admin','/dojo','/misiones','/armeria','/about','/formulario','/form-mision','/perfil','/profile','/pergaminos','/entrenamientos','/recursos','/servicios','/cursos','/projects','/contact'];
+  const spaRoutes = ['/','/login','/signup','/admin','/dojo','/misiones','/armeria','/about','/formulario','/form-mision','/perfil','/profile','/pergaminos','/entrenamientos','/reporte','/recursos','/servicios','/cursos','/projects','/contact'];
   app.get(spaRoutes, (_req, res) => {
     if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
     res.status(404).end();

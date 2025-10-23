@@ -1,4 +1,4 @@
-import { createEl, showModal, updateAuthNav, getJSON } from '../lib/core.js'
+﻿import { createEl, showModal, updateAuthNav, getJSON } from '../lib/core.js'
 
 function info(text) {
   return createEl('p', { className: 'muted small', text });
@@ -12,9 +12,10 @@ function emptyState(title, message) {
 }
 
 function allowedRoles(roles) {
-  return Array.isArray(roles) && roles.some(r => ['gato','sensei','genin'].includes(r));
+  if (!Array.isArray(roles)) return false;
+  const list = roles.map(r => String(r || '').toLowerCase());
+  return list.some(r => ['gato','sensei','genin'].includes(r));
 }
-
 function parseYoutubeId(url) {
   try {
     const u = new URL(url);

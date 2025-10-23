@@ -4,10 +4,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { requireAuth } from '../utils/auth.js';
+import { deriveRoles } from '../utils/roles.js';
 import { User } from '../models/user.js';
 import { Course } from '../models/course.js';
 import { readJSON } from '../storage/fileStore.js';
 import { loadModules } from '../services/scrollsStore.js';
+import { getUserAccess } from '../services/accessStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,14 +33,6 @@ function isValidPhone(phone) {
 function isStrongPassword(pw) {
   if (!pw || typeof pw !== 'string') return false;
   return /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
-}
-
-function resolveRoles(user) {
-  if (!user) return [];
-  if (Array.isArray(user.roles) && user.roles.length) return user.roles;
-  if (user.role === 'admin') return ['gato'];
-  if (user.role) return ['genin'];
-  return [];
 }
 
 async function ensureCoursesSeeded() {
@@ -84,7 +78,7 @@ router.get('/profile', requireAuth, async (req, res) => {
       displayName: u.displayName || u.name || '',
       email: u.email || '',
       phone: u.phone || '',
-      roles: (Array.isArray(u.roles) && u.roles.length) ? u.roles : (u.role === 'admin' ? ['gato'] : (u.role ? ['genin'] : [])),
+      roles: deriveRoles(u),
       avatarUrl: u.avatarUrl || '',
     });
   } catch (err) {
@@ -142,14 +136,13 @@ router.get('/courses', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.user.sub).lean();
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = resolveRoles(user);
+    const roles = deriveRoles(user);
     const canAccessAll = roles.includes('gato') || roles.includes('sensei');
     let courses = [];
     if (canAccessAll) {
       courses = await ensureCoursesSeeded();
     } else if (roles.includes('genin')) {
-      const map = await readJSON(USER_COURSES_KEY, {});
-      const allowed = Array.isArray(map?.[String(user._id)]) ? map[String(user._id)] : [];
+      const { courses: allowed } = await getUserAccess(String(user._id));
       if (allowed.length) {
         courses = await Course.find({ _id: { $in: allowed } }).sort({ createdAt: 1 }).lean();
       } else {
@@ -168,12 +161,11 @@ router.get('/courses/:courseId/modules', requireAuth, async (req, res) => {
     if (!courseId) return res.status(400).json({ error: 'Curso requerido' });
     const user = await User.findById(req.user.sub).lean();
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = resolveRoles(user);
+    const roles = deriveRoles(user);
     const allowedRoles = ['gato', 'sensei', 'genin'];
     if (!roles.some(r => allowedRoles.includes(r))) return res.status(403).json({ error: 'Sin permisos' });
     if (roles.includes('genin')) {
-      const map = await readJSON(USER_COURSES_KEY, {});
-      const allowed = Array.isArray(map?.[String(user._id)]) ? map[String(user._id)] : [];
+      const { courses: allowed } = await getUserAccess(String(user._id));
       if (!allowed.includes(courseId)) {
         return res.status(403).json({ error: 'Curso no asignado' });
       }
@@ -204,16 +196,16 @@ router.put('/password', requireAuth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!matches) {
-      return res.status(400).json({ error: 'Credenciales inválidas' });
+      return res.status(400).json({ error: 'Credenciales invalidas' });
     }
     const reused = await bcrypt.compare(newPassword, user.passwordHash);
     if (reused) {
-      return res.status(400).json({ error: 'La nueva contraseña debe ser diferente a la actual' });
+      return res.status(400).json({ error: 'La nueva contrasena debe ser diferente a la actual' });
     }
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     await user.save();
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: 'No se pudo actualizar la contraseña' });
+    res.status(500).json({ error: 'No se pudo actualizar la contrasena' });
   }
 });

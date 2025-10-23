@@ -76,9 +76,15 @@ async function updateAuthNav() {
   const existing = nav.querySelector('a[data-id="nav-admin"]');
   const loginLink = nav.querySelector('a[data-id="nav-login"]');
   const profileLink = nav.querySelector('a[data-id="nav-profile"]');
-  const classesLink = nav.querySelector('a[data-id="nav-classes"]');
-  const isAdmin = !!(me && Array.isArray(me.roles) && me.roles.includes('gato'));
-  const isInstructor = !!(me && Array.isArray(me.roles) && (me.roles.includes('gato') || me.roles.includes('sensei')));
+  const scrollsLink = nav.querySelector('a[data-id="nav-scrolls"]');
+  const trainingLink = nav.querySelector('a[data-id="nav-training"]');
+  const reportLink = nav.querySelector('a[data-id="nav-report"]');
+  const rawRoles = Array.isArray(me?.roles) ? me.roles : [];
+  const roles = rawRoles.map(r => String(r || '').toLowerCase());
+  const isAdmin = roles.includes('gato');
+  const isInstructor = roles.includes('gato') || roles.includes('sensei');
+  const hasTrainingAccess = roles.some(r => ['gato','sensei','genin'].includes(r));
+  const hasReportAccess = roles.some(r => ['gato','shinobi'].includes(r));
   // Update user chip
   try {
     const chip = document.getElementById('user-chip');
@@ -426,7 +432,7 @@ async function HomePage() {
   const list = createEl('ul', { className: 'list' });
   [
     'Revela vulnerabilidades antes que los atacantes',
-    'Prioriza inversión: enfoque en riesgos reales',
+    'Prioriza inversin: enfoque en riesgos reales',
     'Mejora cumplimiento (OWASP, ISO, NIST)',
     'Entrena equipos con evidencias y casos reales'
   ].forEach(i => list.appendChild(createEl('li', { text: i })));
@@ -1224,14 +1230,32 @@ async function ProfilePage() {
     });
     c.appendChild(badges);
   }
-  if (!classesLink && isInstructor) {
+  if (isInstructor && !scrollsLink) {
     const link = document.createElement('a');
     link.href = '/pergaminos';
-    link.textContent = 'pergaminos';
-    link.setAttribute('data-id', 'nav-classes');
+    link.textContent = 'Pergaminos';
+    link.setAttribute('data-id', 'nav-scrolls');
     nav.appendChild(link);
-  } else if (classesLink && !isInstructor) {
-    classesLink.remove();
+  } else if (!isInstructor && scrollsLink) {
+    scrollsLink.remove();
+  }
+  if (hasTrainingAccess && !trainingLink) {
+    const link = document.createElement('a');
+    link.href = '/entrenamientos';
+    link.textContent = 'Entrenamientos';
+    link.setAttribute('data-id', 'nav-training');
+    nav.appendChild(link);
+  } else if (!hasTrainingAccess && trainingLink) {
+    trainingLink.remove();
+  }
+  if (hasReportAccess && !reportLink) {
+    const link = document.createElement('a');
+    link.href = '/reporte';
+    link.textContent = 'Reporte';
+    link.setAttribute('data-id', 'nav-report');
+    nav.appendChild(link);
+  } else if (!hasReportAccess && reportLink) {
+    reportLink.remove();
   }
   const r1 = createEl('div', { className: 'form-row' });
   r1.append(createEl('label', { text: 'Nombre' }));

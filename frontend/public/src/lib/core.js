@@ -117,9 +117,13 @@ export async function updateAuthNav() {
   const profileLink = nav.querySelector('a[data-id="nav-profile"]');
   const scrollsLink = nav.querySelector('a[data-id="nav-scrolls"]');
   const trainingLink = nav.querySelector('a[data-id="nav-training"]');
-  const isAdmin = !!(me && Array.isArray(me.roles) && me.roles.includes('gato'));
-  const isInstructor = !!(me && Array.isArray(me.roles) && (me.roles.includes('gato') || me.roles.includes('sensei')));
-  const hasTrainingAccess = !!(me && Array.isArray(me.roles) && me.roles.some(r => ['gato','sensei','genin'].includes(r)));
+  const reportLink = nav.querySelector('a[data-id="nav-report"]');
+  const rawRoles = Array.isArray(me?.roles) ? me.roles : [];
+  const roles = rawRoles.map(r => String(r || '').toLowerCase());
+  const isAdmin = roles.includes('gato');
+  const isInstructor = roles.includes('gato') || roles.includes('sensei');
+  const hasTrainingAccess = roles.some(r => ['gato','sensei','genin'].includes(r));
+  const hasReportAccess = roles.some(r => ['gato','shinobi'].includes(r));
   try {
     const chip = document.getElementById('user-chip');
     if (chip) {
@@ -160,6 +164,15 @@ export async function updateAuthNav() {
     nav.appendChild(link);
   } else if (!hasTrainingAccess && trainingLink) {
     trainingLink.remove();
+  }
+  if (hasReportAccess && !reportLink) {
+    const link = document.createElement('a');
+    link.href = '/reporte';
+    link.textContent = 'Reporte';
+    link.setAttribute('data-id', 'nav-report');
+    nav.appendChild(link);
+  } else if (!hasReportAccess && reportLink) {
+    reportLink.remove();
   }
 }
 

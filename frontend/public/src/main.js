@@ -13,6 +13,7 @@ const routes = {
   'admin': async () => (await import('./pages/admin.js')).AdminPage,
   'pergaminos': async () => (await import('./pages/pergaminos.js')).PergaminosPage,
   'entrenamientos': async () => (await import('./pages/entrenamiento.js')).EntrenamientoPage,
+  'reporte': async () => (await import('./pages/reporte.js')).ReportePage,
   'formulario': async () => (await import('./pages/formulario.js')).FormPage,
   'form-mision': async () => (await import('./pages/form-mision.js')).FormMisionPage,
 }

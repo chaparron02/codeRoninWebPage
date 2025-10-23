@@ -532,3 +532,45 @@ body::before, body::after { display: none; }
   .training-layout { grid-template-columns: 1fr; }
   .training-modules { max-height: none; }
 }
+/* Reportes */
+.report-container { display: grid; gap: 20px; }
+.report-layout { display: grid; gap: 20px; grid-template-columns: minmax(260px, 320px) 1fr; align-items: start; }
+.report-panel { border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; background: rgba(0,0,0,0.25); padding: 20px; display: grid; gap: 14px; min-height: 200px; }
+.report-list-grid { display: grid; gap: 16px; }
+.report-card { border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; background: rgba(7,10,15,0.85); cursor: pointer; display: grid; gap: 10px; transition: transform .2s ease, border-color .2s ease; }
+.report-card:hover { transform: translateY(-3px); border-color: rgba(0,231,255,0.45); }
+.report-card.active { border-color: rgba(255,39,71,0.45); box-shadow: var(--glow); }
+.report-progress { position: relative; height: 12px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.report-progress-fill { position: absolute; inset: 0; background: linear-gradient(135deg, var(--blue), var(--purple)); border-radius: inherit; }
+.report-progress-label { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #fff; text-shadow: 0 0 6px rgba(0,0,0,0.6); }
+.report-tag { display: inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(0,231,255,0.12); border: 1px solid rgba(0,231,255,0.32); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.report-progress-form { display: grid; gap: 10px; border: 1px dashed rgba(255,255,255,0.18); border-radius: 12px; padding: 12px; background: rgba(0,0,0,0.25); }
+.report-progress-form input[type="range"] { width: 100%; }
+.report-attachments-box, .report-chat-box { display: grid; gap: 12px; }
+.report-attachment { display: grid; gap: 4px; padding: 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; background: rgba(0,0,0,0.25); }
+.report-upload-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.report-chat-message { border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 12px; background: rgba(0,0,0,0.25); display: grid; gap: 6px; }
+.report-chat-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.report-chat-files { display: flex; gap: 10px; flex-wrap: wrap; }
+.report-chat-files a { font-size: 13px; }
+.report-chat-form { display: grid; gap: 10px; border: 1px dashed rgba(255,255,255,0.18); border-radius: 12px; padding: 14px; background: rgba(0,0,0,0.2); }
+.report-chat-form textarea { width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); background: #0b101b; color: var(--text); padding: 10px 12px; resize: vertical; }
+.report-chat-form textarea:focus { outline: none; border-color: rgba(0,231,255,0.5); box-shadow: 0 0 0 1px rgba(0,231,255,0.25); }
+
+@media (max-width: 960px) {
+  .report-layout { grid-template-columns: 1fr; }
+}
+.access-block { display: grid; gap: 6px; margin-top: 8px; }
+.access-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.access-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(0,231,255,0.32); background: rgba(0,231,255,0.12); font-size: 12px; }
+.access-chip-remove { border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; line-height: 1; }
+.access-chip-remove:hover { color: var(--text); }
+.access-select { width: 100%; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); background: #0b101b; color: var(--text); }
+.access-select:focus { outline: none; border-color: rgba(0,231,255,0.5); box-shadow: 0 0 0 1px rgba(0,231,255,0.25); }
+.access-services { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); background: #0b101b; color: var(--text); resize: vertical; }
+.access-services:focus { outline: none; border-color: rgba(255,39,71,0.45); box-shadow: 0 0 0 1px rgba(255,39,71,0.25); }
+.muted.tiny { font-size: 11px; }
+
+.mission-list { display: grid; gap: 14px; }
+.mission-card { border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.25); display: grid; gap: 8px; }
+.mission-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }

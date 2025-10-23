@@ -1,4 +1,4 @@
-import { createEl, showModal, updateAuthNav, getJSON, getToken, navigate } from '../lib/core.js'
+﻿import { createEl, showModal, updateAuthNav, getJSON, getToken, navigate } from '../lib/core.js'
 
 const DELETE_SECRET = 'gatito';
 const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
@@ -14,11 +14,11 @@ function requireSecret() {
   return true;
 }
 
-function createInfo(text) {
+function info(text) {
   return createEl('p', { className: 'muted small', text });
 }
 
-function buildEmptyState(message) {
+function emptyState(message) {
   const box = createEl('div', { className: 'scrolls-empty' });
   box.appendChild(createEl('h4', { text: 'Sin pergaminos' }));
   box.appendChild(createEl('p', { className: 'muted', text: message }));
@@ -29,18 +29,19 @@ export async function PergaminosPage() {
   const wrap = createEl('section', { className: 'section page pergaminos-page', attrs: { id: 'pergaminos' } });
   const container = createEl('div', { className: 'container admin-container' });
   container.appendChild(createEl('h2', { className: 'section-title', text: 'Pergaminos' }));
-  container.appendChild(createInfo('Crea, organiza y comparte los modulos de cada curso. Solo sensei y shogun pueden editar este archivo legendario.'));
+  container.appendChild(info('Gestiona los modulos de cada curso. Solo sensei y shogun pueden editar estos pergaminos.'));
 
   const me = await getJSON('/api/auth/me', null);
-  const roles = Array.isArray(me?.roles) ? me.roles : [];
+  const rawRoles = Array.isArray(me?.roles) ? me.roles : [];
+  const roles = rawRoles.map(r => String(r || '').toLowerCase());
   const authorized = roles.includes('gato') || roles.includes('sensei');
   if (!authorized) {
     const card = createEl('div', { className: 'card scrolls-alert' });
     card.appendChild(createEl('h3', { text: 'Acceso restringido' }));
-    card.appendChild(createEl('p', { text: 'Solo sensei y shogun pueden abrir los pergaminos.' }));
-    const backBtn = createEl('button', { className: 'btn btn-primary', text: 'Ir al inicio', attrs: { type: 'button' } });
-    backBtn.addEventListener('click', () => navigate('/'));
-    card.appendChild(backBtn);
+    card.appendChild(createEl('p', { text: 'Solo sensei y shogun pueden abrir estos pergaminos.' }));
+    const back = createEl('button', { className: 'btn btn-primary', text: 'Ir al inicio', attrs: { type: 'button' } });
+    back.addEventListener('click', () => navigate('/'));
+    card.appendChild(back);
     container.appendChild(card);
     wrap.appendChild(container);
     return wrap;
@@ -49,16 +50,14 @@ export async function PergaminosPage() {
   updateAuthNav();
 
   const courses = await getJSON('/api/courses.json', []);
-  if (!courses || !courses.length) {
-    const empty = buildEmptyState('Aun no hay cursos registrados. Agrega uno desde el panel de admin para comenzar.');
-    container.appendChild(empty);
+  if (!Array.isArray(courses) || !courses.length) {
+    container.appendChild(emptyState('Aun no hay cursos. Crea alguno en Admin para comenzar.'));
     wrap.appendChild(container);
     return wrap;
   }
 
   let currentCourse = '';
   let modulesCache = [];
-  let loading = false;
 
   const grid = createEl('div', { className: 'pergaminos-grid' });
   const listCard = createEl('div', { className: 'card scrolls-card scrolls-card-list' });
@@ -91,38 +90,51 @@ export async function PergaminosPage() {
   listCard.appendChild(listActions);
 
   formCard.appendChild(createEl('h3', { className: 'scrolls-title', text: 'Nuevo pergamino' }));
-  formCard.appendChild(createInfo('Los pergaminos pueden contener video para ver en sitio o PDF descargable. Usa orden para controlar la secuencia.'));
+  formCard.appendChild(info('Sube video, PDF o asigna un enlace. Usa el campo de orden para controlar la secuencia.'));
 
   const form = createEl('form', { className: 'cr-form scrolls-form', attrs: { autocomplete: 'off' } });
-  const rowTitle = createEl('div', { className: 'form-row' });
-  rowTitle.append(createEl('label', { text: 'Titulo' }));
+  const titleRow = createEl('div', { className: 'form-row' });
+  titleRow.append(createEl('label', { text: 'Titulo' }));
   const inputTitle = createEl('input', { attrs: { type: 'text', required: '', placeholder: 'Modulo 1 - Introduccion' } });
-  rowTitle.appendChild(inputTitle);
+  titleRow.appendChild(inputTitle);
 
-  const rowDesc = createEl('div', { className: 'form-row' });
-  rowDesc.append(createEl('label', { text: 'Resumen' }));
+  const descRow = createEl('div', { className: 'form-row' });
+  descRow.append(createEl('label', { text: 'Resumen' }));
   const inputDesc = createEl('textarea', { attrs: { rows: '3', placeholder: 'Contexto rapido del contenido' } });
-  rowDesc.appendChild(inputDesc);
+  descRow.appendChild(inputDesc);
 
-  const rowOrder = createEl('div', { className: 'form-row' });
-  rowOrder.append(createEl('label', { text: 'Orden' }));
+  const orderRow = createEl('div', { className: 'form-row' });
+  orderRow.append(createEl('label', { text: 'Orden' }));
   const inputOrder = createEl('input', { attrs: { type: 'number', value: '0', min: '0', step: '1' } });
-  rowOrder.appendChild(inputOrder);
+  orderRow.appendChild(inputOrder);
+
+  form.append(titleRow, descRow, orderRow);
 
   const resourceSection = createEl('div', { className: 'resource-section' });
   resourceSection.appendChild(createEl('span', { className: 'resource-label', text: 'Tipo de recurso' }));
+
   const modeBar = createEl('div', { className: 'resource-mode-bar' });
   const modes = [
-    { key: 'upload-video', label: 'Video local', hint: 'MP4 o WEBM (max 200MB)' },
+    { key: 'upload-video', label: 'Video local', hint: 'MP4/WEBM hasta 200MB' },
     { key: 'upload-pdf', label: 'PDF', hint: 'PDF hasta 25MB' },
-    { key: 'external-video', label: 'Video externo', hint: 'Enlace de YouTube, Vimeo o archivo MP4' },
+    { key: 'external-video', label: 'Video externo', hint: 'Enlace de YouTube, Vimeo o MP4' },
   ];
   const state = { mode: 'upload-video' };
+
   const videoInput = createEl('input', { attrs: { type: 'file', accept: 'video/*' } });
   const pdfInput = createEl('input', { attrs: { type: 'file', accept: 'application/pdf' } });
   const urlInput = createEl('input', { attrs: { type: 'url', placeholder: 'https://...' } });
-  const urlHint = createInfo('Usa enlaces https validos. Para YouTube pega el link completo.');
+  const urlHint = info('Usa enlaces https validos. Para YouTube pega el link completo.');
   const hintLabel = createEl('p', { className: 'muted small', text: modes[0].hint });
+
+  const videoPane = createEl('div', { className: 'resource-pane active' });
+  videoPane.appendChild(videoInput);
+  const pdfPane = createEl('div', { className: 'resource-pane' });
+  pdfPane.appendChild(pdfInput);
+  const urlPane = createEl('div', { className: 'resource-pane' });
+  urlPane.append(urlInput, urlHint);
+  const paneWrap = createEl('div', { className: 'resource-pane-wrap' });
+  paneWrap.append(videoPane, pdfPane, urlPane);
 
   modes.forEach(({ key, label, hint }) => {
     const btn = createEl('button', { className: 'resource-mode', text: label, attrs: { type: 'button', 'data-mode': key } });
@@ -136,24 +148,13 @@ export async function PergaminosPage() {
     modeBar.appendChild(btn);
   });
 
-  const videoPane = createEl('div', { className: 'resource-pane active' });
-  videoPane.appendChild(videoInput);
-  const pdfPane = createEl('div', { className: 'resource-pane' });
-  pdfPane.appendChild(pdfInput);
-  const urlPane = createEl('div', { className: 'resource-pane' });
-  urlPane.append(urlInput, urlHint);
-
-  const resourcePaneWrap = createEl('div', { className: 'resource-pane-wrap' });
-  resourcePaneWrap.append(videoPane, pdfPane, urlPane);
-
-  resourceSection.append(modeBar, resourcePaneWrap, hintLabel);
-
-  form.append(rowTitle, rowDesc, rowOrder, resourceSection);
+  resourceSection.append(modeBar, paneWrap, hintLabel);
+  form.appendChild(resourceSection);
 
   const formActions = createEl('div', { className: 'form-actions' });
   const submitBtn = createEl('button', { className: 'btn btn-primary', text: 'Guardar pergamino' });
   formActions.appendChild(submitBtn);
-  form.append(formActions);
+  form.appendChild(formActions);
 
   function updateResourcePane() {
     videoPane.classList.toggle('active', state.mode === 'upload-video');
@@ -165,53 +166,45 @@ export async function PergaminosPage() {
   }
 
   async function loadModules(course) {
-    if (!course) return;
-    loading = true;
-    refreshBtn.disabled = true;
     modulesContainer.innerHTML = '';
-    modulesContainer.appendChild(createInfo('Cargando pergaminos...'));
-    const mods = await getJSON(`/api/instructor/courses/modules?course=${encodeURIComponent(course)}`, []);
-    modulesCache = Array.isArray(mods) ? mods : [];
+    modulesContainer.appendChild(info('Cargando pergaminos...'));
+    const list = await getJSON(`/api/instructor/courses/modules?course=${encodeURIComponent(course)}`, []);
+    modulesCache = Array.isArray(list) ? list : [];
     renderModules();
-    loading = false;
-    refreshBtn.disabled = false;
   }
 
   function renderModules() {
     modulesContainer.innerHTML = '';
     if (!modulesCache.length) {
-      modulesContainer.appendChild(buildEmptyState('Todavia no hay modulos en este curso.'));
+      modulesContainer.appendChild(emptyState('Este curso aun no tiene pergaminos.'));
       return;
     }
     modulesCache.forEach(mod => {
-      const item = createEl('article', { className: 'scrolls-item' });
-      const header = createEl('div', { className: 'scrolls-item-head' });
-      const badge = createEl('span', { className: 'scrolls-pill', text: `#${mod.order ?? 0}` });
+      const card = createEl('article', { className: 'scrolls-item' });
+      const head = createEl('div', { className: 'scrolls-item-head' });
+      head.appendChild(createEl('span', { className: 'scrolls-pill', text: `#${mod.order ?? 0}` }));
+      head.appendChild(createEl('h4', { text: mod.title || 'Sin titulo' }));
       const type = mod?.resource?.type === 'pdf' ? 'PDF' : 'Video';
-      const typeBadge = createEl('span', { className: 'scrolls-pill type', text: type });
-      header.append(badge, createEl('h4', { text: mod.title || 'Sin titulo' }), typeBadge);
-      item.appendChild(header);
-      if (mod.description) {
-        item.appendChild(createEl('p', { className: 'muted', text: mod.description }));
-      }
+      head.appendChild(createEl('span', { className: 'scrolls-pill type', text: type }));
+      card.appendChild(head);
+      if (mod.description) card.appendChild(createEl('p', { className: 'muted', text: mod.description }));
       const meta = createEl('div', { className: 'scrolls-meta' });
-      const updated = mod.updatedAt || mod.createdAt;
-      if (updated) {
+      if (mod.updatedAt || mod.createdAt) {
         try {
-          const date = new Date(updated);
+          const date = new Date(mod.updatedAt || mod.createdAt);
           meta.appendChild(createEl('span', { className: 'muted tiny', text: `Actualizado ${date.toLocaleDateString()}` }));
         } catch {}
       }
-      item.appendChild(meta);
+      card.appendChild(meta);
       const actions = createEl('div', { className: 'scrolls-item-actions' });
       if (mod?.resource?.url) {
-        const view = createEl('a', { className: 'btn btn-ghost btn-sm', text: type === 'PDF' ? 'Descargar' : 'Ver', attrs: { href: mod.resource.url, target: '_blank', rel: 'noopener noreferrer' } });
-        actions.appendChild(view);
+        const label = mod.resource.type === 'pdf' ? 'Descargar' : 'Ver';
+        actions.appendChild(createEl('a', { className: 'btn btn-ghost btn-sm', text: label, attrs: { href: mod.resource.url, target: '_blank', rel: 'noopener noreferrer' } }));
       }
-      const del = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
-      del.addEventListener('click', async () => {
+      const remove = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
+      remove.addEventListener('click', async () => {
         if (!requireSecret()) return;
-        del.disabled = true;
+        remove.disabled = true;
         try {
           const token = getToken();
           const headers = token ? { authorization: `Bearer ${token}` } : {};
@@ -221,17 +214,17 @@ export async function PergaminosPage() {
         } catch (err) {
           showModal(err.message || 'Error al eliminar', { title: 'Error' });
         } finally {
-          del.disabled = false;
+          remove.disabled = false;
         }
       });
-      actions.appendChild(del);
-      item.appendChild(actions);
-      modulesContainer.appendChild(item);
+      actions.appendChild(remove);
+      card.appendChild(actions);
+      modulesContainer.appendChild(card);
     });
   }
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
     if (!currentCourse) {
       showModal('Selecciona un curso primero.', { title: 'Atencion' });
       return;
@@ -248,7 +241,7 @@ export async function PergaminosPage() {
       if (state.mode === 'upload-video') {
         const file = videoInput.files && videoInput.files[0];
         if (!file) throw new Error('Selecciona un video');
-        if (file.size > MAX_VIDEO_BYTES) throw new Error('El video supera el limite de 200MB');
+        if (file.size > MAX_VIDEO_BYTES) throw new Error('Limite 200MB para video');
         const fd = new FormData();
         fd.append('file', file);
         const headers = token ? { authorization: `Bearer ${token}` } : {};
@@ -259,7 +252,7 @@ export async function PergaminosPage() {
       } else if (state.mode === 'upload-pdf') {
         const file = pdfInput.files && pdfInput.files[0];
         if (!file) throw new Error('Selecciona un PDF');
-        if (file.size > MAX_PDF_BYTES) throw new Error('El PDF supera el limite de 25MB');
+        if (file.size > MAX_PDF_BYTES) throw new Error('Limite 25MB para PDF');
         const fd = new FormData();
         fd.append('file', file);
         const headers = token ? { authorization: `Bearer ${token}` } : {};
@@ -273,6 +266,7 @@ export async function PergaminosPage() {
         try { new URL(rawUrl); } catch { throw new Error('URL invalida'); }
         resource = { type: 'video', url: rawUrl, name: title };
       }
+
       const payload = {
         course: currentCourse,
         title,
@@ -280,11 +274,11 @@ export async function PergaminosPage() {
         order: Number(inputOrder.value) || 0,
         resource,
       };
-      const postHeaders = { 'content-type': 'application/json', 'accept': 'application/json' };
-      if (token) postHeaders.authorization = `Bearer ${token}`;
+      const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
+      if (token) headers.authorization = `Bearer ${token}`;
       const res = await fetch('/api/instructor/courses/modules', {
         method: 'POST',
-        headers: postHeaders,
+        headers,
         credentials: 'include',
         body: JSON.stringify(payload),
       });
@@ -313,20 +307,19 @@ export async function PergaminosPage() {
   });
 
   courseSelect.addEventListener('change', async () => {
-    currentCourse = courseSelect.value;
+    currentCourse = courseSelect.value || '';
     modulesCache = [];
+    refreshBtn.disabled = !currentCourse;
     if (!currentCourse) {
       modulesContainer.innerHTML = '';
-      modulesContainer.appendChild(buildEmptyState('Selecciona un curso para ver sus pergaminos.'));
-      refreshBtn.disabled = true;
+      modulesContainer.appendChild(emptyState('Selecciona un curso para ver sus pergaminos.'));
       return;
     }
     await loadModules(currentCourse);
   });
 
   updateResourcePane();
-
-  modulesContainer.appendChild(buildEmptyState('Selecciona un curso para ver sus pergaminos.'));
+  modulesContainer.appendChild(emptyState('Selecciona un curso para ver sus pergaminos.'));
   formCard.appendChild(form);
   grid.append(listCard, formCard);
   container.appendChild(grid);

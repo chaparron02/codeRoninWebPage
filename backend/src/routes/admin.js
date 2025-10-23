@@ -6,7 +6,9 @@ import multer from 'multer';
 import { requireAdmin } from '../utils/auth.js';
 import { CourseInquiry, MissionInquiry } from '../models/inquiry.js';
 import { User } from '../models/user.js';
+import { Report } from '../models/report.js';
 import { loadModules, saveModules, sanitizeResource } from '../services/scrollsStore.js';
+import { getAccessMap, setUserAccess } from '../services/accessStore.js';
 
 export const router = Router();
 
@@ -91,6 +93,14 @@ router.post('/upload/image', uploadImg.single('file'), (req, res) => {
   }
 });
 
+
+function clampProgress(value) {
+  const num = Number(value) || 0;
+  if (num < 0) return 0;
+  if (num > 100) return 100;
+  return num;
+}
+
 // Course modules JSON (kept for legacy)
 router.get('/courses/modules', async (_req, res) => {
   const list = await loadModules();
@@ -162,16 +172,140 @@ router.delete('/courses/modules/:id', async (req, res) => {
   }
 });
 
+async function buildMissionPayload(doc) {
+  if (!doc) return null;
+  const ids = [];
+  if (doc.clientId) ids.push(doc.clientId);
+  if (doc.shogunId) ids.push(doc.shogunId);
+  const users = ids.length
+    ? await User.find({ _id: { $in: ids } }, { username: 1, name: 1 }).lean()
+    : [];
+  const lookup = new Map(users.map(u => [String(u._id), u]));
+  const client = doc.clientId ? lookup.get(String(doc.clientId)) : null;
+  const shogun = doc.shogunId ? lookup.get(String(doc.shogunId)) : null;
+  return {
+    id: String(doc._id),
+    title: doc.title,
+    service: doc.service || '',
+    summary: doc.summary || '',
+    status: doc.status || '',
+    progress: doc.progress ?? 0,
+    client: client ? { id: String(doc.clientId), username: client.username || '', name: client.name || '' } : null,
+    shogun: shogun ? { id: String(doc.shogunId), username: shogun.username || '', name: shogun.name || '' } : null,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  };
+}
+
+router.get('/missions', async (_req, res) => {
+  try {
+    const docs = await Report.find({}).sort({ updatedAt: -1 }).lean();
+    const payload = await Promise.all(docs.map(buildMissionPayload));
+    res.json(payload);
+  } catch {
+    res.status(500).json({ error: 'No se pudieron obtener misiones' });
+  }
+});
+
+router.post('/missions', async (req, res) => {
+  try {
+    const { title, service, summary = '', shinobiId, shogunId } = req.body || {};
+    if (!title || !service || !shinobiId) {
+      return res.status(400).json({ error: 'Titulo, servicio y shinobi son requeridos' });
+    }
+    const shinobi = await User.findById(shinobiId).lean();
+    if (!shinobi) return res.status(404).json({ error: 'Shinobi no encontrado' });
+    const shinobiRoles = Array.isArray(shinobi.roles) ? shinobi.roles : [];
+    if (!shinobiRoles.includes('shinobi')) {
+      return res.status(400).json({ error: 'El shinobi seleccionado no es valido' });
+    }
+    let shogun = null;
+    if (shogunId) {
+      shogun = await User.findById(shogunId).lean();
+      if (!shogun) return res.status(404).json({ error: 'Shogun no encontrado' });
+      const shogunRoles = Array.isArray(shogun.roles) ? shogun.roles : [];
+      if (!shogunRoles.includes('gato')) {
+        return res.status(400).json({ error: 'El shogun seleccionado no es valido' });
+      }
+    }
+    const doc = await Report.create({
+      title,
+      service,
+      summary,
+      clientId: shinobi._id,
+      shogunId: shogun ? shogun._id : req.user.sub,
+      progress: 0,
+      status: 'iniciando',
+      tags: [],
+    });
+    const payload = await buildMissionPayload(await Report.findById(doc._id).lean());
+    res.status(201).json(payload);
+  } catch {
+    res.status(500).json({ error: 'No se pudo crear la mision' });
+  }
+});
+
+router.put('/missions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await Report.findById(id).exec();
+    if (!doc) return res.status(404).json({ error: 'Mision no encontrada' });
+    const { title, service, summary, shinobiId, shogunId, status, progress } = req.body || {};
+    if (title != null) doc.title = String(title).trim() || doc.title;
+    if (service != null) doc.service = String(service).trim() || doc.service;
+    if (summary != null) doc.summary = String(summary);
+    if (status != null) doc.status = String(status).trim() || doc.status;
+    if (progress != null) doc.progress = clampProgress(progress);
+    if (shinobiId != null) {
+      const shinobi = await User.findById(shinobiId).lean();
+      if (!shinobi) return res.status(404).json({ error: 'Shinobi no encontrado' });
+      const shinobiRoles = Array.isArray(shinobi.roles) ? shinobi.roles : [];
+      if (!shinobiRoles.includes('shinobi')) return res.status(400).json({ error: 'El shinobi seleccionado no es valido' });
+      doc.clientId = shinobi._id;
+    }
+    if (shogunId != null) {
+      if (!shogunId) {
+        doc.shogunId = undefined;
+      } else {
+        const shogun = await User.findById(shogunId).lean();
+        if (!shogun) return res.status(404).json({ error: 'Shogun no encontrado' });
+        const shogunRoles = Array.isArray(shogun.roles) ? shogun.roles : [];
+        if (!shogunRoles.includes('gato')) return res.status(400).json({ error: 'El shogun seleccionado no es valido' });
+        doc.shogunId = shogun._id;
+      }
+    }
+    await doc.save();
+    const payload = await buildMissionPayload(await Report.findById(doc._id).lean());
+    res.json(payload);
+  } catch {
+    res.status(500).json({ error: 'No se pudo actualizar la mision' });
+  }
+});
+
+router.delete('/missions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await Report.findById(id).exec();
+    if (!doc) return res.status(404).json({ error: 'Mision no encontrada' });
+    await doc.deleteOne();
+    res.status(204).end();
+  } catch {
+    res.status(500).json({ error: 'No se pudo eliminar la mision' });
+  }
+});
+
 // Users
 router.get('/users', async (_req, res) => {
   try {
     const users = await User.find({}, { passwordHash: 0 }).sort({ createdAt: -1 }).lean();
+    const accessMap = await getAccessMap();
     const mapped = users.map(u => ({
       ...u,
       roles: (Array.isArray(u.roles) && u.roles.length) ? u.roles : (u.role === 'admin' ? ['gato'] : (u.role ? ['genin'] : [])),
+      access: accessMap[String(u._id)] || null,
     }));
-    res.json(mapped);
-  } catch {
+  res.json(mapped);
+} catch {
     res.status(500).json({ error: 'No se pudieron obtener usuarios' });
   }
 });
@@ -227,5 +361,26 @@ router.put('/users/:id/toggle-active', async (req, res) => {
     res.json({ ok: true, active: u.active });
   } catch {
     res.status(500).json({ error: 'No se pudo actualizar el estado' });
+  }
+});
+
+router.get('/access-map', async (_req, res) => {
+  try {
+    const map = await getAccessMap();
+    res.json(map);
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo obtener accesos' });
+  }
+});
+
+router.put('/access-map/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Usuario requerido' });
+    const { courses = [], services = [] } = req.body || {};
+    const entry = await setUserAccess(id, { courses, services });
+    res.json({ ok: true, access: entry });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo actualizar accesos' });
   }
 });
