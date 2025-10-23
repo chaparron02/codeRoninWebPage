@@ -15,20 +15,43 @@ export async function ProfilePage() {
   }
 
   const prof = await getJSON('/api/user/profile', { username: '', name: '', email: '', phone: '', avatarUrl: '' });
-  const roles = Array.isArray(prof.roles) ? prof.roles : (me && Array.isArray(me.roles) ? me.roles : []);
-  const isInstructor = Array.isArray(roles) && (roles.includes('sensei') || roles.includes('gato'));
+  const rawRoles = Array.isArray(prof.roles) ? prof.roles : (me && Array.isArray(me.roles) ? me.roles : []);
+  const roles = rawRoles.map(r => String(r || '').toLowerCase());
+  const isInstructor = roles.includes('sensei') || roles.includes('gato');
 
   const nav = document.getElementById('nav-links');
-  const classesLink = nav ? nav.querySelector('[data-id="nav-classes"]') : null;
+  const pergaminosLink = nav ? nav.querySelector('[data-id="nav-scrolls"]') : null;
+  const trainingLink = nav ? nav.querySelector('[data-id="nav-training"]') : null;
+  const reportLink = nav ? nav.querySelector('[data-id="nav-report"]') : null;
   if (nav) {
-    if (!classesLink && isInstructor) {
+    const hasTrainingAccess = roles.some(r => ['gato','sensei','genin'].includes(r));
+    const hasReportAccess = roles.some(r => ['gato','shinobi'].includes(r));
+    if (!pergaminosLink && isInstructor) {
       const link = document.createElement('a');
-      link.href = '/clases';
-      link.textContent = 'Clases';
-      link.setAttribute('data-id', 'nav-classes');
+      link.href = '/pergaminos';
+      link.textContent = 'Pergaminos';
+      link.setAttribute('data-id', 'nav-scrolls');
       nav.appendChild(link);
-    } else if (classesLink && !isInstructor) {
-      classesLink.remove();
+    } else if (pergaminosLink && !isInstructor) {
+      pergaminosLink.remove();
+    }
+    if (!trainingLink && hasTrainingAccess) {
+      const link = document.createElement('a');
+      link.href = '/entrenamientos';
+      link.textContent = 'Entrenamientos';
+      link.setAttribute('data-id', 'nav-training');
+      nav.appendChild(link);
+    } else if (trainingLink && !hasTrainingAccess) {
+      trainingLink.remove();
+    }
+    if (!reportLink && hasReportAccess) {
+      const link = document.createElement('a');
+      link.href = '/reporte';
+      link.textContent = 'Reporte';
+      link.setAttribute('data-id', 'nav-report');
+      nav.appendChild(link);
+    } else if (reportLink && !hasReportAccess) {
+      reportLink.remove();
     }
   }
 

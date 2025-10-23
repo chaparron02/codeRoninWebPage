@@ -4,12 +4,18 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { requireAuth } from '../utils/auth.js';
+import { deriveRoles } from '../utils/roles.js';
 import { User } from '../models/user.js';
+import { Course } from '../models/course.js';
+import { readJSON } from '../storage/fileStore.js';
+import { loadModules } from '../services/scrollsStore.js';
+import { getUserAccess } from '../services/accessStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
 const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
+const USER_COURSES_KEY = 'user_courses_access.json';
 
 export const router = Router();
 
@@ -29,6 +35,39 @@ function isStrongPassword(pw) {
   return /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/.test(pw);
 }
 
+async function ensureCoursesSeeded() {
+  let list = await Course.find({}).sort({ createdAt: 1 }).lean();
+  if (Array.isArray(list) && list.length) return list;
+  let fallback = await readJSON('courses.json', []);
+  if (!Array.isArray(fallback) || !fallback.length) {
+    try {
+      const fallbackPath = path.join(ROOT_DIR, 'frontend', 'public', 'api', 'courses.json');
+      if (fs.existsSync(fallbackPath)) {
+        const raw = fs.readFileSync(fallbackPath);
+        const parsed = JSON.parse(String(raw));
+        if (Array.isArray(parsed)) fallback = parsed;
+      }
+    } catch {}
+  }
+  if (Array.isArray(fallback) && fallback.length) {
+    try {
+      const docs = fallback.map(c => ({
+        title: c.title,
+        description: c.description || '',
+        image: c.image || '',
+        tags: Array.isArray(c.tags) ? c.tags : [],
+        modalidad: (c.modalidad || c.modality) || 'virtual',
+        price: c.price != null ? String(c.price) : undefined,
+        link: c.link || undefined,
+        category: c.category || undefined,
+      }));
+      if (docs.length) await Course.insertMany(docs);
+      list = await Course.find({}).sort({ createdAt: 1 }).lean();
+    } catch {}
+  }
+  return Array.isArray(list) ? list : [];
+}
+
 router.get('/profile', requireAuth, async (req, res) => {
   try {
     const u = await User.findById(req.user.sub).lean();
@@ -39,7 +78,7 @@ router.get('/profile', requireAuth, async (req, res) => {
       displayName: u.displayName || u.name || '',
       email: u.email || '',
       phone: u.phone || '',
-      roles: (Array.isArray(u.roles) && u.roles.length) ? u.roles : (u.role === 'admin' ? ['gato'] : (u.role ? ['genin'] : [])),
+      roles: deriveRoles(u),
       avatarUrl: u.avatarUrl || '',
     });
   } catch (err) {
@@ -93,6 +132,54 @@ router.post('/avatar', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/courses', requireAuth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.sub).lean();
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const roles = deriveRoles(user);
+    const canAccessAll = roles.includes('gato') || roles.includes('sensei');
+    let courses = [];
+    if (canAccessAll) {
+      courses = await ensureCoursesSeeded();
+    } else if (roles.includes('genin')) {
+      const { courses: allowed } = await getUserAccess(String(user._id));
+      if (allowed.length) {
+        courses = await Course.find({ _id: { $in: allowed } }).sort({ createdAt: 1 }).lean();
+      } else {
+        courses = [];
+      }
+    }
+    res.json({ courses, roles });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudieron obtener cursos' });
+  }
+});
+
+router.get('/courses/:courseId/modules', requireAuth, async (req, res) => {
+  try {
+    const courseId = decodeURIComponent(req.params.courseId || '');
+    if (!courseId) return res.status(400).json({ error: 'Curso requerido' });
+    const user = await User.findById(req.user.sub).lean();
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const roles = deriveRoles(user);
+    const allowedRoles = ['gato', 'sensei', 'genin'];
+    if (!roles.some(r => allowedRoles.includes(r))) return res.status(403).json({ error: 'Sin permisos' });
+    if (roles.includes('genin')) {
+      const { courses: allowed } = await getUserAccess(String(user._id));
+      if (!allowed.includes(courseId)) {
+        return res.status(403).json({ error: 'Curso no asignado' });
+      }
+    }
+    const modules = await loadModules();
+    const filtered = modules
+      .filter(m => (m.course || '') === courseId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt || '').localeCompare(b.createdAt || ''));
+    res.json(filtered);
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudieron obtener modulos' });
+  }
+});
+
 router.put('/password', requireAuth, async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmPassword } = req.body || {};
@@ -109,16 +196,16 @@ router.put('/password', requireAuth, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!matches) {
-      return res.status(400).json({ error: 'Credenciales inválidas' });
+      return res.status(400).json({ error: 'Credenciales invalidas' });
     }
     const reused = await bcrypt.compare(newPassword, user.passwordHash);
     if (reused) {
-      return res.status(400).json({ error: 'La nueva contraseña debe ser diferente a la actual' });
+      return res.status(400).json({ error: 'La nueva contrasena debe ser diferente a la actual' });
     }
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     await user.save();
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: 'No se pudo actualizar la contraseña' });
+    res.status(500).json({ error: 'No se pudo actualizar la contrasena' });
   }
 });

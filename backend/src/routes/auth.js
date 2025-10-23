@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/user.js';
 import { signToken, requireAuth } from '../utils/auth.js';
+import { deriveRoles } from '../utils/roles.js';
 
 export const router = Router();
 
@@ -16,9 +17,7 @@ router.post('/login', async (req, res) => {
     const ok = await bcrypt.compare(password, freshUser.passwordHash);
     if (!ok) return res.status(401).json({ error: 'Usuario o clave invalidos' });
     // derive roles (legacy mapping)
-    const roles = Array.isArray(user.roles) && user.roles.length
-      ? user.roles
-      : (user.role === 'admin' ? ['gato'] : (user.role ? ['genin'] : []));
+    const roles = deriveRoles(user);
     const payload = { sub: String(user._id), username: user.username, roles };
     const token = signToken(payload);
     // Enviar tambien en cookie (opcional)
@@ -48,9 +47,7 @@ router.get('/me', requireAuth, async (req, res) => {
     if (!sub) return res.status(401).json({ error: 'No autorizado' });
     const user = await User.findById(sub).lean();
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = Array.isArray(user.roles) && user.roles.length
-      ? user.roles
-      : (user.role === 'admin' ? ['gato'] : (user.role ? ['genin'] : []));
+    const roles = deriveRoles(user);
     res.json({ username: user.username, roles, displayName: user.displayName || user.username });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo obtener el usuario' });
