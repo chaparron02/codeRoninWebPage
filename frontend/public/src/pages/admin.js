@@ -1,16 +1,4 @@
-import { createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken } from '../lib/core.js';
-
-const DELETE_SECRET = 'gatito';
-
-function requireSecret() {
-  const value = window.prompt('Clave de seguridad');
-  if (value === null) return false;
-  if (value !== DELETE_SECRET) {
-    showModal('Clave incorrecta', { title: 'Error' });
-    return false;
-  }
-  return true;
-}
+import { createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken, requestJutsu } from '../lib/core.js';
 
 function info(text) {
   return createEl('p', { className: 'muted small', text });
@@ -197,17 +185,33 @@ export async function AdminPage() {
         row.appendChild(info(formatDate(item.createdAt)));
         const remove = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
         remove.addEventListener('click', async () => {
-          if (!requireSecret()) return;
+          const jutsu = requestJutsu('Ingresa el jutsu sagrado para eliminar');
+          if (!jutsu) return;
           try {
             const endpoint = state.active === 'course'
               ? `/api/forms/course/${encodeURIComponent(item._id)}`
               : `/api/forms/mission/${encodeURIComponent(item._id)}`;
-            const res = await fetch(endpoint, { method: 'DELETE', headers: token ? { authorization: `Bearer ${token}` } : {}, credentials: 'include' });
-            if (!res.ok) throw new Error();
+            const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
+            if (token) headers.authorization = `Bearer ${token}`;
+            const res = await fetch(endpoint, {
+              method: 'DELETE',
+              headers,
+              credentials: 'include',
+              body: JSON.stringify({ jutsu })
+            });
+            if (!res.ok) {
+              let msg = 'No se pudo eliminar la solicitud';
+              try {
+                const ct = (res.headers.get('content-type') || '').toLowerCase();
+                const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
+                msg = err?.error || err?.message || msg;
+              } catch {}
+              throw new Error(msg);
+            }
             state.data[state.active] = current.filter(x => x._id !== item._id);
             render();
-          } catch {
-            showModal('No se pudo eliminar la solicitud', { title: 'Error' });
+          } catch (err) {
+            showModal(err.message || 'No se pudo eliminar la solicitud', { title: 'Error' });
           }
         });
         row.appendChild(remove);
@@ -367,18 +371,30 @@ export async function AdminPage() {
 
         const remove = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
         remove.addEventListener('click', async () => {
-          if (!requireSecret()) return;
+          const jutsu = requestJutsu('Ingresa el jutsu sagrado para eliminar la mision');
+          if (!jutsu) return;
           try {
+            const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
+            if (token) headers.authorization = `Bearer ${token}`;
             const res = await fetch(`/api/admin/missions/${encodeURIComponent(item.id)}`, {
               method: 'DELETE',
-              headers: token ? { authorization: `Bearer ${token}` } : {},
+              headers,
+              body: JSON.stringify({ jutsu }),
             });
-            if (!res.ok) throw new Error();
+            if (!res.ok) {
+              let msg = 'No se pudo eliminar la mision';
+              try {
+                const ct = (res.headers.get('content-type') || '').toLowerCase();
+                const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
+                msg = err?.error || err?.message || msg;
+              } catch {}
+              throw new Error(msg);
+            }
             const idx = missions.findIndex(m => m.id === item.id);
             if (idx >= 0) missions.splice(idx, 1);
             renderList();
-          } catch {
-            showModal('No se pudo eliminar la mision', { title: 'Error' });
+          } catch (err) {
+            showModal(err.message || 'No se pudo eliminar la mision', { title: 'Error' });
           }
         });
 
@@ -392,17 +408,19 @@ export async function AdminPage() {
     renderList();
   }
 
+
   async function showCourseCreator() {
     setTab(btnCourses);
     setLayout({ showRight: true, leftWidth: 520, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
 
+    let editingCourse = null;
+
     const formCard = createEl('div', { className: 'card admin-course-editor' });
-    formCard.append(
-      createEl('h3', { text: 'Nuevo curso virtual' }),
-      info('Completa los datos base. Los modulos quedan listos en Pergaminos para agregar videos o material.')
-    );
+    const formHeading = createEl('h3', { text: 'Nuevo curso virtual' });
+    const helper = info('Completa los datos base. Los modulos quedan listos en Pergaminos para agregar videos o material.');
+    formCard.append(formHeading, helper);
 
     const form = createEl('form', { className: 'cr-form course-form', attrs: { autocomplete: 'off' } });
 
@@ -427,6 +445,8 @@ export async function AdminPage() {
     const inputPrice = addRow('Precio (COP)', createEl('input', { attrs: { type: 'text', placeholder: '320000' } }));
     const inputLink = addRow('Link de pago', createEl('input', { attrs: { type: 'url', placeholder: 'https://pay.coderonin.co/mi-curso' } }));
     form.appendChild(info('Si aun no tienes enlace de pago, deja el campo vacio para mostrar "Proximamente" en Dojo.'));
+    const inputProductId = addRow('ID producto Hotmart', createEl('input', { attrs: { type: 'text', placeholder: 'HOTMART_PRODUCT_ID' } }));
+    form.appendChild(info('Copia el ID del producto desde Hotmart Notify para enlazar compras automaticas.'));
 
     const inputTags = addRow('Tags', createEl('textarea', { attrs: { rows: '2', placeholder: 'pentesting, ofensiva, labs' } }));
     const inputSkills = addRow('Habilidades', createEl('textarea', { attrs: { rows: '3', placeholder: 'Una habilidad por linea' } }));
@@ -446,14 +466,16 @@ export async function AdminPage() {
     form.appendChild(imgRow);
 
     const actions = createEl('div', { className: 'form-actions' });
+    const cancelBtn = createEl('button', { className: 'btn btn-ghost', text: 'Cancelar', attrs: { type: 'button' } });
+    cancelBtn.style.display = 'none';
     const submitBtn = createEl('button', { className: 'btn btn-primary', text: 'Crear curso' });
-    actions.appendChild(submitBtn);
+    actions.append(cancelBtn, submitBtn);
     form.appendChild(actions);
 
     formCard.appendChild(form);
     left.appendChild(formCard);
 
-    const parseList = (value) => value.split(/\r?\n|,/).map(item => item.trim()).filter(Boolean);
+    const parseList = (value) => value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
     const formatPrice = (value) => {
       if (value == null || value === '') return 'n/d';
       const num = Number(String(value).replace(/[^0-9.]/g, ''));
@@ -479,7 +501,7 @@ export async function AdminPage() {
       }
     };
 
-    inputImage.addEventListener('input', updatePreview);
+    cancelBtn.addEventListener('click', () => resetForm());
 
     uploadBtn.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -506,6 +528,43 @@ export async function AdminPage() {
       }
     });
 
+    function resetForm() {
+      editingCourse = null;
+      formHeading.textContent = 'Nuevo curso virtual';
+      submitBtn.textContent = 'Crear curso';
+      cancelBtn.style.display = 'none';
+      form.reset();
+      selectMod.value = 'virtual';
+      updatePreview();
+    }
+
+    function populateForm(course) {
+      const courseId = course && (course._id || course.id);
+      if (!courseId) return;
+      editingCourse = {
+        ...course,
+        _id: String(courseId),
+      };
+      formHeading.textContent = `Editar ${course.title || 'curso'}`;
+      submitBtn.textContent = 'Guardar cambios';
+      cancelBtn.style.display = 'inline-flex';
+      inputTitle.value = course.title || '';
+      inputDesc.value = course.description || '';
+      selectMod.value = course.modalidad || 'virtual';
+      inputLevel.value = course.level || '';
+      inputDuration.value = course.duration || '';
+      inputPrice.value = course.price || '';
+      inputLink.value = course.link || '';
+      inputProductId.value = course.productId || '';
+      inputTags.value = Array.isArray(course.tags) ? course.tags.join(', ') : '';
+      inputSkills.value = Array.isArray(course.skills) ? course.skills.join(', ') : '';
+      inputOutcome.value = course.outcome || '';
+      inputModules.value = '';
+      inputImage.value = course.image || '';
+      updatePreview();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     async function loadCourses() {
       right.innerHTML = '';
       const summary = createEl('div', { className: 'card admin-course-summary' });
@@ -518,10 +577,15 @@ export async function AdminPage() {
       }
       const list = createEl('div', { className: 'course-admin-list' });
       data.forEach(course => {
+        const courseId = course && (course._id || course.id || course.title);
+        const stringId = courseId ? String(courseId) : '';
         const card = createEl('div', { className: 'admin-course-card' });
         card.appendChild(createEl('h4', { text: course.title || 'Curso' }));
-        card.appendChild(createEl('p', { className: 'muted small', text: `Modalidad: ${course.modalidad || 'virtual'} · Nivel: ${course.level || 'n/d'} · Duracion: ${course.duration || 'n/d'}` }));
+        card.appendChild(createEl('p', { className: 'muted small', text: `Modalidad: ${course.modalidad || 'virtual'} � Nivel: ${course.level || 'n/d'} � Duracion: ${course.duration || 'n/d'}` }));
         card.appendChild(createEl('p', { className: 'muted small', text: `Valor: ${formatPrice(course.price)}` }));
+        if (course.productId) {
+          card.appendChild(createEl('p', { className: 'muted tiny', text: `Product ID: ${course.productId}` }));
+        }
         const linkWrap = createEl('div', { className: 'course-admin-link' });
         const hasLink = Boolean(course.link);
         const anchor = createEl('a', { text: hasLink ? 'Ver link de pago' : 'Proximamente', attrs: hasLink ? { href: course.link, target: '_blank', rel: 'noopener noreferrer' } : {} });
@@ -529,6 +593,44 @@ export async function AdminPage() {
         linkWrap.appendChild(anchor);
         card.appendChild(linkWrap);
         card.appendChild(createEl('p', { className: 'muted tiny', text: 'Gestiona contenidos detallados desde Pergaminos.' }));
+
+        const controls = createEl('div', { className: 'course-admin-actions' });
+        const editBtn = createEl('button', { className: 'btn btn-sm btn-primary', text: 'Editar' });
+        editBtn.addEventListener('click', () => populateForm({ ...course, id: stringId }));
+        controls.appendChild(editBtn);
+
+        const deleteBtn = createEl('button', { className: 'btn btn-sm btn-danger', text: 'Eliminar' });
+        deleteBtn.addEventListener('click', async () => {
+          const jutsu = requestJutsu('Ingresa el jutsu sagrado para eliminar el curso');
+          if (!jutsu || !stringId) return;
+          try {
+            const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
+            const token = getToken();
+            if (token) headers.authorization = `Bearer ${token}`;
+            const res = await fetch(`/api/admin/courses/${encodeURIComponent(stringId)}`, {
+              method: 'DELETE',
+              headers,
+              credentials: 'include',
+              body: JSON.stringify({ jutsu })
+            });
+            if (!res.ok) {
+              let msg = 'No se pudo eliminar el curso';
+              try {
+                const ct = (res.headers.get('content-type') || '').toLowerCase();
+                const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
+                msg = err?.error || err?.message || msg;
+              } catch {}
+              throw new Error(msg);
+            }
+            if (editingCourse && editingCourse._id === stringId) resetForm();
+            await loadCourses();
+          } catch (err) {
+            showModal(err.message || 'No se pudo eliminar el curso', { title: 'Error' });
+          }
+        });
+        controls.appendChild(deleteBtn);
+        card.appendChild(controls);
+
         list.appendChild(card);
       });
       summary.appendChild(list);
@@ -540,9 +642,10 @@ export async function AdminPage() {
       submitBtn.disabled = true;
       try {
         const title = inputTitle.value.trim();
-        const link = inputLink.value.trim();
         if (!title) throw new Error('El titulo es obligatorio');
-        if (!link) throw new Error('El link de pago es obligatorio');
+        const link = inputLink.value.trim();
+        if (!editingCourse && !link) throw new Error('El link de pago es obligatorio');
+
         const payload = {
           title,
           description: inputDesc.value.trim(),
@@ -552,38 +655,70 @@ export async function AdminPage() {
           price: inputPrice.value.trim(),
           link,
           image: inputImage.value.trim(),
+          productId: inputProductId.value.trim(),
           tags: parseList(inputTags.value),
           skills: parseList(inputSkills.value),
-          modules: parseList(inputModules.value),
           outcome: inputOutcome.value.trim(),
         };
-        const headers = { 'content-type': 'application/json' };
+
+        const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
         const token = getToken();
         if (token) headers.authorization = `Bearer ${token}`;
-        const res = await fetch('/api/admin/courses', { method: 'POST', headers, body: JSON.stringify(payload) });
-        if (!res.ok) {
-          let message = 'No se pudo crear el curso';
-          try {
-            const err = await res.json();
-            message = err?.error || message;
-          } catch {}
-          throw new Error(message);
+
+        if (editingCourse) {
+          const jutsu = requestJutsu('Ingresa el jutsu sagrado para actualizar el curso');
+          if (!jutsu) {
+            submitBtn.disabled = false;
+            return;
+          }
+          payload.jutsu = jutsu;
+          const res = await fetch(`/api/admin/courses/${encodeURIComponent(editingCourse._id)}`, {
+            method: 'PUT',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            let message = 'No se pudo actualizar el curso';
+            try {
+              const ct = (res.headers.get('content-type') || '').toLowerCase();
+              const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
+              message = err?.error || err?.message || message;
+            } catch {}
+            throw new Error(message);
+          }
+          showModal('Curso actualizado', { title: 'Listo' });
+        } else {
+          payload.modules = parseList(inputModules.value);
+          const res = await fetch('/api/admin/courses', {
+            method: 'POST',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) {
+            let message = 'No se pudo crear el curso';
+            try {
+              const err = await res.json();
+              message = err?.error || message;
+            } catch {}
+            throw new Error(message);
+          }
+          showModal('Curso creado. Revisa Pergaminos para agregar contenido.', { title: 'Listo' });
         }
-        showModal('Curso creado. Revisa Pergaminos para agregar contenido.', { title: 'Listo' });
-        form.reset();
-        updatePreview();
+
+        resetForm();
         await loadCourses();
       } catch (err) {
-        showModal(err.message || 'Error al crear el curso', { title: 'Error' });
+        showModal(err.message || 'Error al guardar el curso', { title: 'Error' });
       } finally {
         submitBtn.disabled = false;
       }
     });
 
-    updatePreview();
+    resetForm();
     await loadCourses();
   }
-
   async function showUsers() {
     setTab(btnUsers);
     setLayout({ showRight: true, leftWidth: 420, expandRight: true });
@@ -690,6 +825,8 @@ export async function AdminPage() {
       const toggleBtn = createEl('button', { className: 'btn', text: user.active ? 'Desactivar' : 'Activar' });
       const saveBtn = createEl('button', { className: 'btn btn-primary', text: 'Guardar' });
       saveBtn.style.marginLeft = '8px';
+      const passwordBtn = createEl('button', { className: 'btn btn-ghost', text: 'Cambiar clave' });
+      passwordBtn.style.marginLeft = '8px';
 
       toggleBtn.addEventListener('click', async () => {
         try {
@@ -715,7 +852,7 @@ export async function AdminPage() {
           });
           if (!resRoles.ok) throw new Error();
           const coursesPayload = Array.from(assignedCourses);
-          const servicesPayload = serviceArea.value.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+    const parseList = (value) => value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
           const resAccess = await fetch(`/api/admin/access-map/${user._id}`, {
             method: 'PUT',
             headers,
@@ -728,7 +865,41 @@ export async function AdminPage() {
         }
       });
 
-      actionsCell.append(toggleBtn, saveBtn);
+      passwordBtn.addEventListener('click', async () => {
+        try {
+          const newPassword = window.prompt('Nueva contraseña (8+ caracteres, una mayuscula y un simbolo)');
+          if (!newPassword) return;
+          const confirmPassword = window.prompt('Confirma la nueva contraseña');
+          if (!confirmPassword || confirmPassword !== newPassword) {
+            showModal('Las contraseñas no coinciden', { title: 'Error' });
+            return;
+          }
+          const jutsu = requestJutsu('Ingresa el jutsu sagrado para cambiar la contraseña');
+          if (!jutsu) return;
+          const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
+          if (token) headers.authorization = `Bearer ${token}`;
+          const res = await fetch(`/api/admin/users/${user._id}/password`, {
+            method: 'PUT',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify({ password: newPassword, confirmPassword, jutsu })
+          });
+          if (!res.ok) {
+            let msg = 'No se pudo cambiar la contraseña';
+            try {
+              const ct = (res.headers.get('content-type') || '').toLowerCase();
+              const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
+              msg = err?.error || err?.message || msg;
+            } catch {}
+            throw new Error(msg);
+          }
+          showModal('Contraseña actualizada', { title: 'Listo' });
+        } catch (err) {
+          showModal(err.message || 'No se pudo cambiar la contraseña', { title: 'Error' });
+        }
+      });
+
+      actionsCell.append(toggleBtn, saveBtn, passwordBtn);
       tr.appendChild(actionsCell);
       tr.appendChild(createEl('td', { text: (user.createdAt || '').split('T')[0] }));
       tbody.appendChild(tr);

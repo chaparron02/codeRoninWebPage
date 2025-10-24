@@ -27,7 +27,8 @@ const DEFAULT_COURSES = [
     duration: '8 semanas',
     price: '420000',
     link: 'https://pay.coderonin.co/hacking-etico',
-    image: '/assets/material/ninja1.webp'
+    image: '/assets/material/ninja1.webp',
+    productId: 'HOTMART_HACKING_ETICO'
   },
   {
     title: 'Cybersecurity Fundamentals',
@@ -39,7 +40,8 @@ const DEFAULT_COURSES = [
     duration: '4 semanas',
     price: '260000',
     link: 'https://pay.coderonin.co/cyber-fundamentals',
-    image: '/assets/material/dojo1.webp'
+    image: '/assets/material/dojo1.webp',
+    productId: 'HOTMART_CYBER_FUNDAMENTALS'
   },
   {
     title: 'Seguridad en Redes',
@@ -51,7 +53,8 @@ const DEFAULT_COURSES = [
     duration: '6 semanas',
     price: '320000',
     link: 'https://pay.coderonin.co/seguridad-redes',
-    image: '/assets/material/ninja3.webp'
+    image: '/assets/material/ninja3.webp',
+    productId: 'HOTMART_SEGURIDAD_REDES'
   },
   {
     title: 'Analisis Forense Digital',
@@ -63,7 +66,8 @@ const DEFAULT_COURSES = [
     duration: '6 semanas',
     price: '340000',
     link: 'https://pay.coderonin.co/analisis-forense',
-    image: '/assets/material/ninja4.webp'
+    image: '/assets/material/ninja4.webp',
+    productId: 'HOTMART_ANALISIS_FORENSE'
   },
 ];
 
@@ -140,6 +144,7 @@ router.get('/courses.json', async (_req, res) => {
           outcome: c.outcome || c.outcomes || '',
           level: c.level || '',
           duration: c.duration || '',
+          productId: c.productId || c.product_id || undefined,
         }));
         DEFAULT_PRESENCIAL_COURSES.forEach(c => {
           docs.push({
@@ -155,6 +160,7 @@ router.get('/courses.json', async (_req, res) => {
             outcome: c.outcome || c.outcomes || '',
             level: c.level || '',
             duration: c.duration || '',
+            productId: c.productId || undefined,
           });
         });
         if (docs.length) await Course.insertMany(docs);
@@ -200,6 +206,7 @@ router.post('/courses.json', async (req, res) => {
       outcome: c.outcome || c.outcomes || '',
       level: c.level || '',
       duration: c.duration || '',
+      productId: c.productId || c.product_id || undefined,
     }));
     await Course.deleteMany({});
     if (docs.length) await Course.insertMany(docs);

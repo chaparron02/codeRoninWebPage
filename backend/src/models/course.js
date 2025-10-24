@@ -14,6 +14,7 @@ const CourseSchema = new mongoose.Schema(
     outcome: { type: String, default: '' },
     level: { type: String, default: '' },
     duration: { type: String, default: '' },
+    productId: { type: String, trim: true, index: true },
   },
   { timestamps: true, versionKey: false }
 );

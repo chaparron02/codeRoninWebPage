@@ -33,6 +33,12 @@ export function showModal(message, { title = 'Listo', onClose } = {}) {
   document.addEventListener('keydown', onKey);
 }
 
+export function requestJutsu(message = 'Ingresa el jutsu sagrado') {
+  const value = window.prompt(message);
+  if (value === null) return '';
+  return String(value || '').trim();
+}
+
 export function getToken() {
   try { return localStorage.getItem('cr_token') || ''; } catch { return ''; }
 }

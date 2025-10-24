@@ -27,7 +27,8 @@
       "Modulo 4 - Explotacion controlada",
       "Modulo 5 - Post-explotacion",
       "Modulo 6 - Reporte y presentacion"
-    ]
+    ],
+    "productId": "HOTMART_HACKING_ETICO"
   },
   {
     "title": "Cybersecurity Fundamentals",
@@ -54,7 +55,8 @@
       "Modulo 2 - Gestion de riesgo",
       "Modulo 3 - Controles y marcos",
       "Modulo 4 - Roadmap y gobierno"
-    ]
+    ],
+    "productId": "HOTMART_CYBER_FUNDAMENTALS"
   },
   {
     "title": "Seguridad en Redes",
@@ -82,7 +84,8 @@
       "Modulo 3 - Controles perimetrales",
       "Modulo 4 - Telemetria y monitoreo",
       "Modulo 5 - Respuesta y automatizacion"
-    ]
+    ],
+    "productId": "HOTMART_SEGURIDAD_REDES"
   },
   {
     "title": "Analisis Forense Digital",
@@ -110,6 +113,7 @@
       "Modulo 3 - Artefactos clave",
       "Modulo 4 - Timeline y correlacion",
       "Modulo 5 - Reporte forense"
-    ]
+    ],
+    "productId": "HOTMART_ANALISIS_FORENSE"
   }
 ]
