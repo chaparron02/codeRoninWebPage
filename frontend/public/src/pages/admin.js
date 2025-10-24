@@ -1,4 +1,4 @@
-import { createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken, requestJutsu } from '../lib/core.js';
+﻿import { createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken, requestJutsu } from '../lib/core.js';
 
 function info(text) {
   return createEl('p', { className: 'muted small', text });
@@ -39,6 +39,53 @@ function buildStat(label, value) {
   return box;
 }
 
+const DEFAULT_MISSION_OFFERS = {
+  red: [
+    { title: 'Red Team', desc: 'Campanas adversariales para medir deteccion y respuesta.', tags: ['adversarial'], image: '/assets/material/ninja1.webp' },
+    { title: 'Pentesting Web', desc: 'Pruebas OWASP con explotacion controlada y plan por riesgo.', tags: ['owasp'], image: '/assets/material/ninja3.webp' },
+    { title: 'Pentesting Infraestructura', desc: 'Evaluacion interna/externa, AD y rutas de ataque.', tags: ['infra', 'ad'], image: '/assets/material/ninja2.webp' },
+    { title: 'Pruebas de sistema operativo', desc: 'Configuracion, servicios y privilegios en Windows/Linux.', tags: ['os', 'hardening'], image: '/assets/material/dojo1.webp' },
+    { title: 'Intrusion fisica', desc: 'Pruebas controladas de acceso fisico y exposicion de activos.', tags: ['fisico'], image: '/assets/material/ninja4.webp' },
+    { title: 'Pruebas de redes WiFi', desc: 'Auditoria WLAN, cifrados, segregacion y ataques comunes.', tags: ['wifi', '802.11'], image: '/assets/material/armeria.webp' },
+  ],
+  blue: [
+    { title: 'SOC Readiness y Detecciones', desc: 'Mapeo ATT&CK, casos de uso SIEM y pruebas de deteccion.', tags: ['SOC', 'detections'], image: '/assets/material/dojo1.webp' },
+    { title: 'Gestion de Vulnerabilidades', desc: 'Descubrimiento, priorizacion (CVSS/EPSS), parchado y verificacion.', tags: ['vulns', 'riesgo'], image: '/assets/material/ninja2.webp' },
+    { title: 'DFIR y Respuesta a Incidentes', desc: 'Forense, contencion, erradicacion y mejora continua.', tags: ['dfir', 'ir'], image: '/assets/material/ninja4.webp' },
+    { title: 'Threat Modeling y Arquitectura Segura', desc: 'STRIDE/ATT&CK y controles por diseno.', tags: ['arquitectura'], image: '/assets/material/ninja3.webp' },
+    { title: 'Hardening y Baselines', desc: 'Benchmarks CIS y politicas para reducir superficie de ataque.', tags: ['cis', 'baseline'], image: '/assets/material/armeria.webp' },
+    { title: 'Seguridad en la Nube', desc: 'Revision IAM, redes y datos en AWS/Azure/GCP.', tags: ['cloud', 'iam'], image: '/assets/material/ninja1.webp' },
+  ],
+  social: [
+    { title: 'Campanas de phishing', desc: 'Simulaciones con metricas (clic, reporte) y retroalimentacion.', tags: ['phishing'], image: '/assets/material/ninja2.webp' },
+    { title: 'Concientizacion de seguridad', desc: 'Sesiones breves para reducir riesgo humano con ejemplos reales.', tags: ['awareness'], image: '/assets/material/dojo1.webp' },
+    { title: 'Simulaciones y talleres', desc: 'Entrenamiento practico para lideres y equipos.', tags: ['taller'], image: '/assets/material/ninja3.webp' },
+    { title: 'Intrusion fisica (SE)', desc: 'Pruebas fisicas con enfoque en ingenieria social.', tags: ['fisico', 'SE'], image: '/assets/material/ninja4.webp' },
+  ],
+};
+
+const MISSION_CATEGORIES = { red: 'Red Team', blue: 'Blue Team', social: 'Ingenieria social' };
+const MISSION_CATEGORY_KEYS = Object.keys(MISSION_CATEGORIES);
+
+function cloneMissionOffers(source = {}) {
+  const copy = {};
+  MISSION_CATEGORY_KEYS.forEach((cat) => {
+    const list = Array.isArray(source?.[cat]) ? source[cat] : [];
+    copy[cat] = list.map(item => ({
+      title: String(item?.title || '').trim(),
+      desc: String(item?.desc || '').trim(),
+      tags: Array.isArray(item?.tags) ? item.tags.map(t => String(t).trim()).filter(Boolean) : [],
+      image: String(item?.image || '').trim(),
+    })).filter(entry => entry.title);
+  });
+  return copy;
+}
+
+function normalizeMissionOffers(data) {
+  if (!data || typeof data !== 'object') return cloneMissionOffers(DEFAULT_MISSION_OFFERS);
+  return cloneMissionOffers(data);
+}
+
 export async function AdminPage() {
   const wrap = createEl('section', { className: 'section page', attrs: { id: 'admin' } });
   const root = createEl('div', { className: 'container admin-container' });
@@ -70,9 +117,10 @@ export async function AdminPage() {
   const btnDash = createEl('button', { className: 'btn active', text: 'Dashboard' });
   const btnReq = createEl('button', { className: 'btn', text: 'Solicitudes' });
   const btnMissions = createEl('button', { className: 'btn', text: 'Misiones' });
+  const btnMissionOffers = createEl('button', { className: 'btn', text: 'Nuevas misiones' });
   const btnCourses = createEl('button', { className: 'btn', text: 'Nuevos pergaminos' });
   const btnUsers = createEl('button', { className: 'btn', text: 'Usuarios' });
-  tabs.append(btnDash, btnReq, btnMissions, btnCourses, btnUsers);
+  tabs.append(btnDash, btnReq, btnMissions, btnMissionOffers, btnCourses, btnUsers);
   root.appendChild(tabs);
 
   const split = createEl('div', { className: 'admin-split' });
@@ -117,7 +165,7 @@ export async function AdminPage() {
   }
 
   function setTab(btn) {
-    [btnDash, btnReq, btnMissions, btnCourses, btnUsers].forEach(b => b.classList.remove('active'));
+    [btnDash, btnReq, btnMissions, btnMissionOffers, btnCourses, btnUsers].forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
 
@@ -408,6 +456,264 @@ export async function AdminPage() {
     renderList();
   }
 
+  async function showMissionOffers() {
+    setTab(btnMissionOffers);
+    setLayout({ showRight: true, leftWidth: 480, expandRight: true });
+    left.innerHTML = '';
+    right.innerHTML = '';
+    left.append(createEl('h3', { text: 'Nuevas misiones' }), info('Gestiona las ofertas que ven los clientes en la pagina de Misiones.'));
+
+    const categories = MISSION_CATEGORY_KEYS;
+    const categoryLabels = MISSION_CATEGORIES;
+    const parseTags = (value) => value.split(/\r?\n|,/).map(t => t.trim()).filter(Boolean);
+
+    let offers = await getJSON('/api/missions.json', cloneMissionOffers(DEFAULT_MISSION_OFFERS));
+    offers = normalizeMissionOffers(offers);
+    let editing = null;
+
+    async function persistOffers(nextState) {
+      const res = await fetch('/api/missions.json', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(nextState),
+      });
+      if (!res.ok) {
+        let msg = 'No se pudieron guardar las misiones';
+        try {
+          const ct = (res.headers.get('content-type') || '').toLowerCase();
+          if (ct.includes('application/json')) {
+            const err = await res.json();
+            msg = err?.error || err?.message || msg;
+          } else {
+            msg = await res.text();
+          }
+        } catch {}
+        throw new Error(msg);
+      }
+    }
+
+    const formCard = createEl('div', { className: 'card admin-mission-editor' });
+    const formHeading = createEl('h3', { text: 'Nueva oferta' });
+    formCard.append(formHeading, info('Estas ofertas alimentan la seccion publica de misiones.'));
+    const form = createEl('form', { className: 'cr-form', attrs: { autocomplete: 'off' } });
+
+    const addRow = (label, node) => {
+      const row = createEl('div', { className: 'form-row' });
+      row.append(createEl('label', { text: label }));
+      row.appendChild(node);
+      form.appendChild(row);
+      return node;
+    };
+
+    const inputTitle = addRow('Titulo', createEl('input', { attrs: { type: 'text', required: '', placeholder: 'Pentesting ofensivo' } }));
+    const selectCategory = document.createElement('select');
+    selectCategory.className = 'select';
+    categories.forEach((cat, idx) => selectCategory.append(new Option(categoryLabels[cat], cat, idx === 0, idx === 0)));
+    addRow('Categoria', selectCategory);
+    const inputDesc = addRow('Descripcion', createEl('textarea', { attrs: { rows: '3', placeholder: 'Que problema resuelve esta mision?' } }));
+    const inputTags = addRow('Tags', createEl('textarea', { attrs: { rows: '2', placeholder: 'ofensiva, red team, adversarial' } }));
+    form.appendChild(info('Separa los tags por coma o salto de linea.'));
+
+    const imageField = createEl('div', { className: 'mission-image-field' });
+    const imagePreview = createEl('div', { className: 'mission-image-preview', text: 'Sin imagen' });
+    const inputImage = createEl('input', { attrs: { type: 'url', placeholder: 'https://...' } });
+    const uploadBtn = createEl('button', { className: 'btn btn-sm', text: 'Subir archivo', attrs: { type: 'button' } });
+    const fileInput = createEl('input', { attrs: { type: 'file', accept: 'image/*' } });
+    fileInput.style.display = 'none';
+    imageField.append(imagePreview, inputImage, uploadBtn, fileInput);
+    addRow('Imagen', imageField);
+
+    const updateImagePreview = (value) => {
+      const src = String(value || '').trim();
+      imagePreview.innerHTML = '';
+      if (!src) {
+        imagePreview.textContent = 'Sin imagen';
+        return;
+      }
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = 'Vista previa oferta';
+      img.className = 'mission-image-thumb';
+      imagePreview.appendChild(img);
+    };
+
+    inputImage.addEventListener('input', () => updateImagePreview(inputImage.value));
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      uploadBtn.disabled = true;
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const headers = token ? { authorization: `Bearer ${token}` } : {};
+        const res = await fetch('/api/admin/upload/image', { method: 'POST', headers, body: fd });
+        if (!res.ok) throw new Error('No se pudo subir la imagen');
+        const data = await res.json();
+        if (!data?.url) throw new Error('Respuesta invalida al subir imagen');
+        inputImage.value = data.url;
+        updateImagePreview(data.url);
+      } catch (err) {
+        showModal(err.message || 'Error al subir imagen', { title: 'Error' });
+      } finally {
+        uploadBtn.disabled = false;
+        fileInput.value = '';
+      }
+    });
+
+    updateImagePreview('');
+
+    const actionRow = createEl('div', { className: 'form-actions' });
+    const cancelBtn = createEl('button', { className: 'btn btn-ghost', text: 'Cancelar', attrs: { type: 'button' } });
+    cancelBtn.style.display = 'none';
+    const submitBtn = createEl('button', { className: 'btn btn-primary', text: 'Guardar oferta' });
+    actionRow.append(cancelBtn, submitBtn);
+    form.appendChild(actionRow);
+    formCard.appendChild(form);
+    left.appendChild(formCard);
+
+    function resetForm() {
+      editing = null;
+      formHeading.textContent = 'Nueva oferta';
+      submitBtn.textContent = 'Guardar oferta';
+      cancelBtn.style.display = 'none';
+      cancelBtn.disabled = false;
+      submitBtn.disabled = false;
+      form.reset();
+      if (selectCategory.options.length) selectCategory.value = selectCategory.options[0].value;
+      updateImagePreview('');
+    }
+
+    function populateForm(category, index) {
+      const item = offers?.[category]?.[index];
+      if (!item) return;
+      editing = { category, index };
+      formHeading.textContent = `Editar ${item.title || 'oferta'}`;
+      submitBtn.textContent = 'Guardar cambios';
+      cancelBtn.style.display = 'inline-flex';
+      inputTitle.value = item.title || '';
+      selectCategory.value = category;
+      inputDesc.value = item.desc || '';
+      inputTags.value = Array.isArray(item.tags) ? item.tags.join(', ') : '';
+      inputImage.value = item.image || '';
+      updateImagePreview(item.image || '');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    cancelBtn.addEventListener('click', () => resetForm());
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      cancelBtn.disabled = true;
+      try {
+        const entry = {
+          title: inputTitle.value.trim(),
+          desc: inputDesc.value.trim(),
+          tags: parseTags(inputTags.value),
+          image: inputImage.value.trim(),
+        };
+        if (!entry.title) throw new Error('Titulo requerido');
+        const category = selectCategory.value || 'red';
+        const nextState = cloneMissionOffers(offers);
+        if (editing) {
+          const { category: prevCategory, index } = editing;
+          if (!Array.isArray(nextState[prevCategory]) || !nextState[prevCategory][index]) {
+            throw new Error('La oferta seleccionada ya no existe');
+          }
+          if (prevCategory === category) {
+            nextState[prevCategory][index] = entry;
+          } else {
+            nextState[prevCategory].splice(index, 1);
+            nextState[category].push(entry);
+          }
+        } else {
+          nextState[category].push(entry);
+        }
+        await persistOffers(nextState);
+        offers = nextState;
+        const message = editing ? 'Oferta actualizada' : 'Oferta creada';
+        resetForm();
+        renderList();
+        showModal(message, { title: 'Listo' });
+      } catch (err) {
+        showModal(err.message || 'No se pudo guardar la oferta', { title: 'Error' });
+      } finally {
+        submitBtn.disabled = false;
+        cancelBtn.disabled = false;
+      }
+    });
+
+    const listCard = createEl('div', { className: 'card mission-offer-list' });
+    right.appendChild(listCard);
+
+    function renderList() {
+      listCard.innerHTML = '';
+      listCard.appendChild(createEl('h3', { text: 'Ofertas publicadas' }));
+      const total = categories.reduce((sum, cat) => sum + (offers?.[cat]?.length || 0), 0);
+      if (!total) {
+        listCard.appendChild(info('Aun no hay ofertas configuradas.'));
+        return;
+      }
+      categories.forEach(cat => {
+        const items = Array.isArray(offers[cat]) ? offers[cat] : [];
+        const section = createEl('div', { className: 'mission-offer-category' });
+        section.appendChild(createEl('h4', { text: `${categoryLabels[cat]} (${items.length})` }));
+        const grid = createEl('div', { className: 'mission-offer-items' });
+        if (!items.length) {
+          grid.appendChild(info('Sin ofertas en esta categoria.'));
+        } else {
+          items.forEach((item, index) => {
+            const card = createEl('div', { className: 'mission-offer-item' });
+            card.appendChild(createEl('h5', { text: item.title || 'Oferta' }));
+            if (item.image) {
+              const thumb = document.createElement('img');
+              thumb.src = item.image;
+              thumb.alt = item.title || 'Imagen de la mision';
+              thumb.className = 'mission-offer-thumb';
+              card.appendChild(thumb);
+            }
+            if (item.desc) card.appendChild(createEl('p', { className: 'muted small', text: item.desc }));
+            if (item.tags && item.tags.length) {
+              card.appendChild(createEl('p', { className: 'muted tiny', text: `Tags: ${item.tags.join(', ')}` }));
+            }
+            const actions = createEl('div', { className: 'mission-offer-actions' });
+            const editBtn = createEl('button', { className: 'btn btn-sm btn-primary', text: 'Editar' });
+            editBtn.addEventListener('click', () => populateForm(cat, index));
+            const deleteBtn = createEl('button', { className: 'btn btn-sm btn-danger', text: 'Eliminar' });
+            deleteBtn.addEventListener('click', async () => {
+              if (!window.confirm('Eliminar esta oferta?')) return;
+              const nextState = cloneMissionOffers(offers);
+              if (!Array.isArray(nextState[cat])) return;
+              nextState[cat].splice(index, 1);
+              try {
+                await persistOffers(nextState);
+                offers = nextState;
+                if (editing && editing.category === cat) {
+                  if (editing.index === index) {
+                    resetForm();
+                  } else if (editing.index > index) {
+                    editing.index -= 1;
+                  }
+                }
+                renderList();
+              } catch (err) {
+                showModal(err.message || 'No se pudo eliminar la oferta', { title: 'Error' });
+              }
+            });
+            actions.append(editBtn, deleteBtn);
+            card.appendChild(actions);
+            grid.appendChild(card);
+          });
+        }
+        section.appendChild(grid);
+        listCard.appendChild(section);
+      });
+    }
+
+    renderList();
+  }
+
 
   async function showCourseCreator() {
     setTab(btnCourses);
@@ -581,7 +887,7 @@ export async function AdminPage() {
         const stringId = courseId ? String(courseId) : '';
         const card = createEl('div', { className: 'admin-course-card' });
         card.appendChild(createEl('h4', { text: course.title || 'Curso' }));
-        card.appendChild(createEl('p', { className: 'muted small', text: `Modalidad: ${course.modalidad || 'virtual'} � Nivel: ${course.level || 'n/d'} � Duracion: ${course.duration || 'n/d'}` }));
+        card.appendChild(createEl('p', { className: 'muted small', text: `Modalidad: ${course.modalidad || 'virtual'} · Nivel: ${course.level || 'n/d'} · Duracion: ${course.duration || 'n/d'}` }));
         card.appendChild(createEl('p', { className: 'muted small', text: `Valor: ${formatPrice(course.price)}` }));
         if (course.productId) {
           card.appendChild(createEl('p', { className: 'muted tiny', text: `Product ID: ${course.productId}` }));
@@ -867,14 +1173,14 @@ export async function AdminPage() {
 
       passwordBtn.addEventListener('click', async () => {
         try {
-          const newPassword = window.prompt('Nueva contraseña (8+ caracteres, una mayuscula y un simbolo)');
+          const newPassword = window.prompt('Nueva contraseÃ±a (8+ caracteres, una mayuscula y un simbolo)');
           if (!newPassword) return;
-          const confirmPassword = window.prompt('Confirma la nueva contraseña');
+          const confirmPassword = window.prompt('Confirma la nueva contraseÃ±a');
           if (!confirmPassword || confirmPassword !== newPassword) {
-            showModal('Las contraseñas no coinciden', { title: 'Error' });
+            showModal('Las contraseÃ±as no coinciden', { title: 'Error' });
             return;
           }
-          const jutsu = requestJutsu('Ingresa el jutsu sagrado para cambiar la contraseña');
+          const jutsu = requestJutsu('Ingresa el jutsu sagrado para cambiar la contraseÃ±a');
           if (!jutsu) return;
           const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
           if (token) headers.authorization = `Bearer ${token}`;
@@ -885,7 +1191,7 @@ export async function AdminPage() {
             body: JSON.stringify({ password: newPassword, confirmPassword, jutsu })
           });
           if (!res.ok) {
-            let msg = 'No se pudo cambiar la contraseña';
+            let msg = 'No se pudo cambiar la contraseÃ±a';
             try {
               const ct = (res.headers.get('content-type') || '').toLowerCase();
               const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
@@ -893,9 +1199,9 @@ export async function AdminPage() {
             } catch {}
             throw new Error(msg);
           }
-          showModal('Contraseña actualizada', { title: 'Listo' });
+          showModal('ContraseÃ±a actualizada', { title: 'Listo' });
         } catch (err) {
-          showModal(err.message || 'No se pudo cambiar la contraseña', { title: 'Error' });
+          showModal(err.message || 'No se pudo cambiar la contraseÃ±a', { title: 'Error' });
         }
       });
 
@@ -911,6 +1217,7 @@ export async function AdminPage() {
   btnDash.addEventListener('click', showDashboard);
   btnReq.addEventListener('click', showRequests);
   btnMissions.addEventListener('click', showMissions);
+  btnMissionOffers.addEventListener('click', showMissionOffers);
   btnCourses.addEventListener('click', showCourseCreator);
   btnUsers.addEventListener('click', showUsers);
 
@@ -919,3 +1226,4 @@ export async function AdminPage() {
   wrap.appendChild(root);
   return wrap;
 }
+
