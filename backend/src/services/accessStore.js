@@ -39,3 +39,21 @@ export async function setUserAccess(userId, { courses = [], services = [] } = {}
   await writeJSON(KEY, map);
   return map[userId];
 }
+
+
+export async function removeCourseFromAccess(courseId) {
+  if (!courseId) return;
+  const target = String(courseId);
+  const map = await loadRaw();
+  let changed = false;
+  for (const [userId, entry] of Object.entries(map)) {
+    if (entry && Array.isArray(entry.courses)) {
+      const filtered = entry.courses.map(String).filter(id => id !== target);
+      if (filtered.length !== entry.courses.length) {
+        entry.courses = filtered;
+        changed = true;
+      }
+    }
+  }
+  if (changed) await writeJSON(KEY, map);
+}

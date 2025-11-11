@@ -29,6 +29,50 @@ export async function LoginPage() {
   btnSignup.addEventListener('click', (e) => { e.preventDefault(); navigate('/signup'); });
   actions.append(btn, btnSignup);
   form.append(fg1, fg2, actions);
+  const recoveryRow = createEl('div', { className: 'form-recovery' });
+  const forgot = createEl('button', { className: 'btn btn-ghost', text: 'Recuperar acceso', attrs: { type: 'button' } });
+  forgot.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = window.prompt('Ingresa tu correo para recibir un codigo OTP');
+    if (!email) return;
+    try {
+      const res = await fetch('/api/auth/request-reset', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (!res.ok) throw new Error('No se pudo iniciar la recuperación');
+      showModal('Si el correo existe, recibirás un codigo OTP en los proximos minutos.', { title: 'Revisa tu correo' });
+      const otp = window.prompt('Ingresa el codigo OTP enviado a tu correo');
+      if (!otp) return;
+      const newPassword = window.prompt('Nueva contraseña (8+ caracteres, una mayuscula y un simbolo)');
+      if (!newPassword) return;
+      const confirmPassword = window.prompt('Confirma la nueva contraseña');
+      if (!confirmPassword || confirmPassword !== newPassword) {
+        showModal('Las contraseñas no coinciden', { title: 'Error' });
+        return;
+      }
+      const resetRes = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+        body: JSON.stringify({ email, otp, password: newPassword, confirmPassword })
+      });
+      if (!resetRes.ok) {
+        let msg = 'No se pudo restablecer la contraseña';
+        try {
+          const ct = (resetRes.headers.get('content-type') || '').toLowerCase();
+          const err = ct.includes('application/json') ? await resetRes.json() : JSON.parse(await resetRes.text());
+          msg = err?.error || err?.message || msg;
+        } catch {}
+        throw new Error(msg);
+      }
+      showModal('Contraseña actualizada. Inicia sesión con tu nueva clave.', { title: 'Listo' });
+    } catch (err) {
+      showModal(err.message || 'No se pudo iniciar la recuperación', { title: 'Error' });
+    }
+  });
+  recoveryRow.appendChild(forgot);
+  form.appendChild(recoveryRow);
   card.appendChild(form);
 
   // If already logged-in admin (gato), go to admin

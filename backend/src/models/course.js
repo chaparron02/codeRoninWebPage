@@ -10,9 +10,13 @@ const CourseSchema = new mongoose.Schema(
     price: { type: String },
     link: { type: String },
     category: { type: String },
+    skills: { type: [String], default: [] },
+    outcome: { type: String, default: '' },
+    level: { type: String, default: '' },
+    duration: { type: String, default: '' },
+    productId: { type: String, trim: true, index: true },
   },
   { timestamps: true, versionKey: false }
 );
 
 export const Course = mongoose.model('Course', CourseSchema);
-

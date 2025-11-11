@@ -3,16 +3,36 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import bcrypt from 'bcryptjs';
 import { requireAdmin } from '../utils/auth.js';
 import { CourseInquiry, MissionInquiry } from '../models/inquiry.js';
+import { Course } from '../models/course.js';
 import { User } from '../models/user.js';
 import { Report } from '../models/report.js';
 import { loadModules, saveModules, sanitizeResource } from '../services/scrollsStore.js';
-import { getAccessMap, setUserAccess } from '../services/accessStore.js';
+import { getAccessMap, setUserAccess, removeCourseFromAccess } from '../services/accessStore.js';
+import { verifyJutsu } from '../utils/jutsu.js';
 
 export const router = Router();
 
 router.use(requireAdmin);
+
+async function ensureJutsu(req, res, context) {
+  const jutsu = (req.body && req.body.jutsu) || req.query?.jutsu;
+  const actor = req.user?.username || 'admin';
+  const ok = await verifyJutsu(jutsu, { context, actor });
+  if (!ok) {
+    res.status(401).json({ error: 'Jutsu invalido' });
+    return false;
+  }
+  return true;
+}
+
+const STRONG_PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}$/;
+
+function validatePassword(pw) {
+  return typeof pw === 'string' && STRONG_PASSWORD_REGEX.test(pw);
+}
 
 router.get('/stats', async (_req, res) => {
   try {
@@ -28,6 +48,180 @@ router.get('/stats', async (_req, res) => {
     res.status(500).json({ error: 'No se pudieron obtener estadisticas' });
   }
 });
+
+router.post('/courses', async (req, res) => {
+  try {
+    const {
+      title,
+      description = '',
+      modalidad = 'virtual',
+      tags = [],
+      skills = [],
+      outcome = '',
+      level = '',
+      duration = '',
+      price,
+      link,
+      productId,
+      image = '',
+      category,
+      modules = [],
+    } = req.body || {};
+    if (!title || typeof title !== 'string') return res.status(400).json({ error: 'Titulo requerido' });
+    if (link != null && typeof link !== 'string') return res.status(400).json({ error: 'Link de pago invalido' });
+    const cleanLink = typeof link === 'string' ? link.trim() : '';
+    if (cleanLink && !/^https?:\/\//i.test(cleanLink)) {
+      return res.status(400).json({ error: 'El link debe iniciar con http o https' });
+    }
+    const cleanProductId = typeof productId === 'string' ? productId.trim() : undefined;
+    const payload = {
+      title: title.trim(),
+      description: description || '',
+      modalidad: ['virtual', 'presencial'].includes(modalidad) ? modalidad : 'virtual',
+      tags: Array.isArray(tags) ? tags.map(t => String(t)).filter(Boolean) : [],
+      skills: Array.isArray(skills) ? skills.map(t => String(t)).filter(Boolean) : [],
+      outcome: outcome || '',
+      level: level || '',
+      duration: duration || '',
+      price: price != null && price !== '' ? String(price) : undefined,
+      link: cleanLink || undefined,
+      image: image || '',
+      category: category || undefined,
+      productId: cleanProductId || undefined,
+    };
+    const doc = await Course.create(payload);
+    if (Array.isArray(modules) && modules.length) {
+      const modList = await loadModules();
+      const hasExisting = modList.some(m => (m.course || '') === payload.title);
+      if (!hasExisting) {
+        const now = new Date().toISOString();
+        const newEntries = modules
+          .map(name => String(name || '').trim())
+          .filter(Boolean)
+          .map((name, idx) => ({
+            id: Math.random().toString(36).slice(2),
+            course: payload.title,
+            title: name,
+            description: '',
+            order: idx + 1,
+            resource: { type: 'link', url: '', name },
+            createdAt: now,
+            updatedAt: now,
+          }));
+        if (newEntries.length) {
+          modList.push(...newEntries);
+          modList.sort((a, b) => (a.course || '').localeCompare(b.course || '') || (a.order || 0) - (b.order || 0));
+          await saveModules(modList);
+        }
+      }
+    }
+    const fresh = await Course.findById(doc._id).lean();
+    res.status(201).json(fresh || doc.toObject());
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo crear el curso' });
+  }
+});
+
+router.put('/courses/:id', async (req, res) => {
+  try {
+    if (!(await ensureJutsu(req, res, 'Actualizar curso'))) return;
+    const { id } = req.params;
+    const body = req.body || {};
+    const course = await Course.findById(id).exec();
+    if (!course) return res.status(404).json({ error: 'Curso no encontrado' });
+
+    const oldTitle = course.title;
+
+    if (body.title != null) {
+      const title = String(body.title || '').trim();
+      if (title) course.title = title;
+    }
+    if (body.description != null) course.description = String(body.description || '');
+    if (body.modalidad != null) {
+      const mode = String(body.modalidad || '').toLowerCase();
+      if (['virtual','presencial'].includes(mode)) course.modalidad = mode;
+    }
+    if (body.level != null) course.level = String(body.level || '');
+    if (body.duration != null) course.duration = String(body.duration || '');
+    if (body.price != null) {
+      const price = String(body.price || '').trim();
+      course.price = price ? price : undefined;
+    }
+    if (body.link !== undefined) {
+      const link = String(body.link || '').trim();
+      course.link = link ? link : undefined;
+    }
+    if (body.image !== undefined) {
+      const image = String(body.image || '').trim();
+      course.image = image || '';
+    }
+    if (body.category !== undefined) course.category = String(body.category || '');
+    if (body.outcome !== undefined) course.outcome = String(body.outcome || '');
+    if (body.productId !== undefined) {
+      const productId = String(body.productId || '').trim();
+      course.productId = productId ? productId : undefined;
+    }
+    if (body.tags !== undefined) {
+      const tags = Array.isArray(body.tags) ? body.tags : String(body.tags || '').split(',');
+      course.tags = tags.map(t => String(t).trim()).filter(Boolean);
+    }
+    if (body.skills !== undefined) {
+      const skills = Array.isArray(body.skills) ? body.skills : String(body.skills || '').split(',');
+      course.skills = skills.map(s => String(s).trim()).filter(Boolean);
+    }
+
+    await course.save();
+
+    if (course.title && course.title !== oldTitle) {
+      try {
+        const modules = await loadModules();
+        let changed = false;
+        modules.forEach(m => {
+          if ((m.course || '') === oldTitle) {
+            m.course = course.title;
+            changed = true;
+          }
+        });
+        if (changed) await saveModules(modules);
+      } catch (err) {
+        console.warn('[admin] no se pudo actualizar modulos al renombrar curso', err);
+      }
+    }
+
+    const fresh = await Course.findById(id).lean();
+    res.json({ ok: true, course: fresh });
+  } catch (err) {
+    console.error('[admin] error al actualizar curso', err);
+    res.status(500).json({ error: 'No se pudo actualizar el curso' });
+  }
+});
+
+router.delete('/courses/:id', async (req, res) => {
+  try {
+    if (!(await ensureJutsu(req, res, 'Eliminar curso'))) return;
+    const { id } = req.params;
+    const doc = await Course.findById(id).exec();
+    if (!doc) return res.status(404).json({ error: 'Curso no encontrado' });
+    await doc.deleteOne();
+    try {
+      const modules = await loadModules();
+      const filtered = modules.filter(m => (m.course || '') !== doc.title);
+      if (filtered.length !== modules.length) await saveModules(filtered);
+    } catch (err) {
+      console.warn('[admin] no se pudo limpiar modulos del curso', err);
+    }
+    try {
+      await removeCourseFromAccess(String(id));
+    } catch (err) {
+      console.warn('[admin] no se pudo limpiar accesos de usuarios', err);
+    }
+    res.status(204).end();
+  } catch (err) {
+    console.error('[admin] error al eliminar curso', err);
+    res.status(500).json({ error: 'No se pudo eliminar el curso' });
+  }
+});
+
 
 // Upload dirs
 const __filename = fileURLToPath(import.meta.url);
@@ -161,6 +355,7 @@ router.put('/courses/modules/:id', async (req, res) => {
 });
 router.delete('/courses/modules/:id', async (req, res) => {
   try {
+    if (!(await ensureJutsu(req, res, 'Eliminar pergamino admin'))) return;
     const { id } = req.params;
     const list = await loadModules();
     const next = list.filter(x => x.id !== id);
@@ -284,6 +479,7 @@ router.put('/missions/:id', async (req, res) => {
 
 router.delete('/missions/:id', async (req, res) => {
   try {
+    if (!(await ensureJutsu(req, res, 'Eliminar mision admin'))) return;
     const { id } = req.params;
     const doc = await Report.findById(id).exec();
     if (!doc) return res.status(404).json({ error: 'Mision no encontrada' });
@@ -361,6 +557,28 @@ router.put('/users/:id/toggle-active', async (req, res) => {
     res.json({ ok: true, active: u.active });
   } catch {
     res.status(500).json({ error: 'No se pudo actualizar el estado' });
+  }
+});
+
+router.put('/users/:id/password', async (req, res) => {
+  try {
+    if (!(await ensureJutsu(req, res, 'Cambio de contraseña admin'))) return;
+    const { id } = req.params;
+    const { password, confirmPassword } = req.body || {};
+    if (!password || password !== confirmPassword) {
+      return res.status(400).json({ error: 'Las contraseñas no coinciden' });
+    }
+    if (!validatePassword(password)) {
+      return res.status(400).json({ error: 'La contrasena debe tener al menos 8 caracteres, una mayuscula y un simbolo' });
+    }
+    const user = await User.findById(id).exec();
+    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    user.passwordHash = await bcrypt.hash(password, 10);
+    await user.save();
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin] error al cambiar contraseña', err);
+    res.status(500).json({ error: 'No se pudo cambiar la contraseña' });
   }
 });
 

@@ -5,11 +5,23 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { requireRoles } from '../utils/auth.js';
 import { loadModules, saveModules, sanitizeResource, normalizeModule } from '../services/scrollsStore.js';
+import { verifyJutsu } from '../utils/jutsu.js';
 
 export const router = Router();
 
 // Require either gato (admin) or sensei (instructor)
 router.use(requireRoles(['gato','sensei']));
+
+async function ensureJutsu(req, res, context) {
+  const jutsu = (req.body && req.body.jutsu) || req.query?.jutsu;
+  const actor = req.user?.username || 'sensei';
+  const ok = await verifyJutsu(jutsu, { context, actor });
+  if (!ok) {
+    res.status(401).json({ error: 'Jutsu invalido' });
+    return false;
+  }
+  return true;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,6 +140,7 @@ router.put('/courses/modules/:id', async (req, res) => {
 
 router.delete('/courses/modules/:id', async (req, res) => {
   try {
+    if (!(await ensureJutsu(req, res, 'Eliminar pergamino instructor'))) return;
     const { id } = req.params;
     const list = await loadModules();
     const next = list.filter(x => x.id !== id);

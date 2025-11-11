@@ -13,6 +13,7 @@ import { router as userRouter } from './routes/user.js';
 import { router as instructorRouter } from './routes/instructor.js';
 import { router as adminRouter } from './routes/admin.js';
 import { router as reportsRouter } from './routes/reports.js';
+import { router as webhooksRouter } from './routes/webhooks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,7 @@ export function createApp() {
   const app = express();
 
   app.use(cors());
+  app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use(morgan('dev'));
 
@@ -40,6 +42,7 @@ export function createApp() {
   app.use('/api/reports', reportsRouter);
   app.use('/api/forms', formsApiRouter);
   app.use('/api', apiRouter);
+  app.use('/webhooks', webhooksRouter);
 
   // Web form fallbacks (non-API endpoints)
   app.use(formsWebRouter);
