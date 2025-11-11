@@ -55,7 +55,7 @@ export async function PoliticasPage() {
     [
       'Los pagos se realizan por transferencia bancaria, pasarela local o criptomonedas previo acuerdo.',
       'Ofrecemos mantenimiento posventa para los hardenings y consultorias por treinta dias sin costo adicional.',
-      'Cualquier inconformidad se escala a soporte@coderonin.co o al canal de WhatsApp corporativo.'
+      'Cualquier inconformidad se escala a soporte@coderonin.site o al canal de WhatsApp corporativo.'
     ]
   ]))
 

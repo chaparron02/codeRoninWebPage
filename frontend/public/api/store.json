@@ -15,55 +15,5 @@
       "image": "/assets/material/armeria.webp"
     }
   ],
-  "pdfs": [
-    {
-      "name": "CodeRonin GUÍA escaneo de vulnerabilidades",
-      "price": "2.00",
-      "link": "https://payhip.com/b/ZGUfo",
-      "desc": "Metodología para escaneo responsable: preparación, reconocimiento, uso de herramientas (Nmap/NSE, nuclei), interpretación de hallazgos y priorización por riesgo, con tips de reporte.",
-      "image": "/assets/material/ninja1.webp"
-    },
-    {
-      "name": "GUÍA de CodeRonin XSS y CSRF",
-      "price": "2.00",
-      "link": "https://payhip.com/b/oSUOB",
-      "desc": "Conceptos y práctica de XSS/CSRF: payloads, vectores comunes, bypasses habituales y medidas de mitigación. Incluye checklist de pruebas y referencias OWASP.",
-      "image": "/assets/material/ninja3.webp"
-    },
-    {
-      "name": "Introducción a las VPN y cómo protegen tu navegación",
-      "price": "2.49",
-      "link": "https://payhip.com/b/eUOWw",
-      "desc": "Qué es una VPN, protocolos (OpenVPN/WireGuard), escenarios de uso, privacidad y configuración básica. Guía para elegir y usar VPN con buenas prácticas.",
-      "image": "/assets/material/dojo1.webp"
-    },
-    {
-      "name": "Cómo reconocer y evitar fraudes por phishing",
-      "price": "2.49",
-      "link": "https://payhip.com/b/pwF0a",
-      "desc": "Señales clave para detectar phishing en correo/SMS/redes, ejemplos reales y cómo responder. Incluye mini‑checklist para equipos y usuarios finales.",
-      "image": "/assets/material/ninja4.webp"
-    },
-    {
-      "name": "Guía Esencial de Wi‑Fi Seguro y Privacidad",
-      "price": "2.49",
-      "link": "https://payhip.com/b/qp4C8",
-      "desc": "Configura tu red Wi‑Fi de forma segura: WPA2/WPA3, WPS, segmentación para IoT, canales y hardening del router. Consejos de privacidad para el hogar y oficina.",
-      "image": "/assets/material/armeria.webp"
-    },
-    {
-      "name": "Guía rápida de ciberseguridad personal 2025 – CodeRonin",
-      "price": "2.49",
-      "link": "https://payhip.com/b/F1MfP",
-      "desc": "Higiene digital 2025: contraseñas y gestores, 2FA, backups, privacidad en móvil y PC, y hábitos diarios. Incluye checklist imprimible.",
-      "image": "/assets/material/ninja2.webp"
-    },
-    {
-      "name": "Guía Rápida de Ciberseguridad Personal 2025 – CodeRonin",
-      "price": "2.49",
-      "link": "https://payhip.com/b/Su5lV",
-      "desc": "Versión rápida enfocada en acciones inmediatas: endurece tus cuentas, dispositivos y navegación con pasos concretos y enlaces útiles.",
-      "image": "/assets/material/ninja2.webp"
-    }
-  ]
+  "pdfs": []
 }

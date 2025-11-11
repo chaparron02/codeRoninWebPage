@@ -6,69 +6,21 @@ import { readJSON, writeJSON } from '../storage/fileStore.js';
 import { Course } from '../models/course.js';
 import { Mission } from '../models/mission.js';
 import { Service } from '../models/service.js';
-import { loadModules } from '../services/scrollsStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
 const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
+const PDF_DIR = path.join(MATERIAL_DIR, 'pdfs');
 
 export const router = Router();
 
 // Defaults (se guardan la primera vez que se consultan si decides usarlos)
 const DEFAULT_COURSES = [
-  {
-    title: 'Hacking Etico',
-    description: 'Metodologia ofensiva completa con enfoque profesional y reportes accionables.',
-    tags: ['pentesting', 'ofensiva', 'labs'],
-    skills: ['Metodologia OSSTMM/OWASP', 'Recon y enumeracion', 'Escalada controlada', 'Reporte ejecutivo y tecnico'],
-    outcome: 'Guiar un pentest de punta a punta documentando hallazgos con impacto claro.',
-    level: 'Intermedio',
-    duration: '8 semanas',
-    price: '420000',
-    link: 'https://pay.coderonin.co/hacking-etico',
-    image: '/assets/material/ninja1.webp',
-    productId: 'HOTMART_HACKING_ETICO'
-  },
-  {
-    title: 'Cybersecurity Fundamentals',
-    description: 'Gobierno, gestion de riesgos y controles esenciales para despegar una estrategia de seguridad.',
-    tags: ['fundamentos', 'gobierno'],
-    skills: ['Modelos CIA y Zero Trust', 'Mapeo de amenazas y riesgos', 'Diseno de controles base', 'Lectura de marcos (ISO, NIST)'],
-    outcome: 'Priorizar controles y comunicar riesgos de forma efectiva al negocio.',
-    level: 'Inicial',
-    duration: '4 semanas',
-    price: '260000',
-    link: 'https://pay.coderonin.co/cyber-fundamentals',
-    image: '/assets/material/dojo1.webp',
-    productId: 'HOTMART_CYBER_FUNDAMENTALS'
-  },
-  {
-    title: 'Seguridad en Redes',
-    description: 'Arquitecturas defensivas modernas, segmentacion, monitoreo y respuesta.',
-    tags: ['redes', 'defensiva'],
-    skills: ['Diseno de segmentacion', 'Hardening de perimetro y nube', 'Telemetria y monitoreo', 'Playbooks de respuesta'],
-    outcome: 'Disenar y operar redes endurecidas con visibilidad y tiempos de respuesta medibles.',
-    level: 'Intermedio',
-    duration: '6 semanas',
-    price: '320000',
-    link: 'https://pay.coderonin.co/seguridad-redes',
-    image: '/assets/material/ninja3.webp',
-    productId: 'HOTMART_SEGURIDAD_REDES'
-  },
-  {
-    title: 'Analisis Forense Digital',
-    description: 'Procesos DFIR de punta a punta: preservacion, parsing y construccion de timeline.',
-    tags: ['forense', 'incidentes'],
-    skills: ['Cadena de custodia', 'Parsing de artefactos', 'Reconstruccion de eventos', 'Reporte forense'],
-    outcome: 'Responder incidentes documentando evidencias defensibles tecnica y legalmente.',
-    level: 'Avanzado',
-    duration: '6 semanas',
-    price: '340000',
-    link: 'https://pay.coderonin.co/analisis-forense',
-    image: '/assets/material/ninja4.webp',
-    productId: 'HOTMART_ANALISIS_FORENSE'
-  },
+  { title: 'Hacking Etico', description: 'Fundamentos y metodologia de pruebas.', tags: ['pentesting','etica'] },
+  { title: 'Cybersecurity Fundamentals', description: 'Conceptos clave y control de riesgos.', tags: ['fundamentos'] },
+  { title: 'Seguridad en Redes', description: 'Arquitecturas y segmentacion.', tags: ['redes'] },
+  { title: 'Analisis Forense', description: 'Adquisicion y analisis de evidencia.', tags: ['forense'] },
 ];
 
 const DEFAULT_SERVICES = [
@@ -140,11 +92,6 @@ router.get('/courses.json', async (_req, res) => {
           price: c.price != null ? String(c.price) : undefined,
           link: c.link || undefined,
           category: c.category || undefined,
-          skills: Array.isArray(c.skills) ? c.skills : [],
-          outcome: c.outcome || c.outcomes || '',
-          level: c.level || '',
-          duration: c.duration || '',
-          productId: c.productId || c.product_id || undefined,
         }));
         DEFAULT_PRESENCIAL_COURSES.forEach(c => {
           docs.push({
@@ -156,11 +103,6 @@ router.get('/courses.json', async (_req, res) => {
             price: undefined,
             link: undefined,
             category: c.category || '',
-            skills: Array.isArray(c.skills) ? c.skills : [],
-            outcome: c.outcome || c.outcomes || '',
-            level: c.level || '',
-            duration: c.duration || '',
-            productId: c.productId || undefined,
           });
         });
         if (docs.length) await Course.insertMany(docs);
@@ -202,32 +144,12 @@ router.post('/courses.json', async (req, res) => {
       price: c.price != null ? String(c.price) : undefined,
       link: c.link || undefined,
       category: c.category || undefined,
-      skills: Array.isArray(c.skills) ? c.skills : [],
-      outcome: c.outcome || c.outcomes || '',
-      level: c.level || '',
-      duration: c.duration || '',
-      productId: c.productId || c.product_id || undefined,
     }));
     await Course.deleteMany({});
     if (docs.length) await Course.insertMany(docs);
     res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: 'No se pudieron actualizar cursos' });
-  }
-});
-
-router.get('/course-modules', async (req, res) => {
-  try {
-    const course = (req.query.course || '').toString().trim();
-    if (!course) return res.status(400).json({ error: 'Curso requerido' });
-    const modules = await loadModules();
-    const filtered = modules
-      .filter(m => (m.course || '') === course)
-      .sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt || '').localeCompare(b.createdAt || ''))
-      .map(m => ({ id: m.id, title: m.title, description: m.description || '', order: m.order || 0 }));
-    res.json(filtered);
-  } catch (err) {
-    res.status(500).json({ error: 'No se pudieron obtener modulos' });
   }
 });
 
@@ -337,16 +259,54 @@ router.post('/missions.json', async (req, res) => {
   }
 });
 
+router.get('/tools.json', async (_req, res) => {
+  try {
+    let list = await readJSON('tools.json', null);
+    if (!Array.isArray(list)) {
+      list = [];
+      try {
+        const fallbackPath = path.join(ROOT_DIR, 'frontend', 'public', 'api', 'tools.json');
+        if (fs.existsSync(fallbackPath)) {
+          const raw = fs.readFileSync(fallbackPath);
+          const parsed = JSON.parse(String(raw));
+          if (Array.isArray(parsed)) list = parsed;
+        }
+      } catch {}
+    }
+    const mapped = (Array.isArray(list) ? list : [])
+      .map(item => {
+        if (!item || typeof item !== 'object') return null;
+        const id = typeof item.id === 'string' && item.id.trim()
+          ? item.id.trim()
+          : (item._id ? String(item._id) : Math.random().toString(36).slice(2));
+        const title = (item.title != null ? String(item.title) : '').trim() || 'Herramienta';
+        const description = item.description != null
+          ? String(item.description)
+          : (item.desc != null ? String(item.desc) : '');
+        const link = typeof item.link === 'string' ? item.link : '';
+        const image = typeof item.image === 'string' ? item.image : '';
+        const tags = Array.isArray(item.tags) ? item.tags.map(t => String(t).trim()).filter(Boolean) : [];
+        const badge = item.badge != null ? String(item.badge) : '';
+        const isPublished = item.isPublished ?? item.published ?? true;
+        if (!isPublished) return null;
+        return { id, title, description, link, image, tags, badge };
+      })
+      .filter(Boolean);
+    res.json(mapped);
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudieron obtener herramientas' });
+  }
+});
+
 router.get('/pdfs.json', (_req, res) => {
   try {
-    const dir = MATERIAL_DIR;
+    const dir = PDF_DIR;
     if (!fs.existsSync(dir)) return res.json([]);
     const files = fs.readdirSync(dir)
       .filter(f => f.toLowerCase().endsWith('.pdf'))
-      .map(name => ({ name, url: `/material/${encodeURIComponent(name)}` }));
+      .map(name => ({ name, url: `/material/pdfs/${encodeURIComponent(name)}` }));
     res.json(files);
   } catch (err) {
     res.status(500).json({ error: 'No se pudo listar PDFs' });
   }
 });
-

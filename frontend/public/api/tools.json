@@ -1,0 +1,22 @@
+[
+  {
+    "id": "coderonin-darkfinder",
+    "title": "Coderonin Dark Finder",
+    "description": "Recopila inteligencia en la dark web combinando Ahmia y otros buscadores para monitorear filtraciones y credenciales expuestas.",
+    "link": "https://github.com/coderonin404/CoderoninDarkfinder",
+    "image": "/assets/material/ninja2.webp",
+    "tags": ["osint", "darkweb"],
+    "badge": "Nuevo",
+    "isPublished": true
+  },
+  {
+    "id": "coderonin-ai",
+    "title": "Coderonin AI",
+    "description": "Toolkit de ingenieria social centrado en campañas de clonacion de voz con IA y automatizacion de guiones.",
+    "link": "",
+    "image": "/assets/material/ninja4.webp",
+    "tags": ["social engineering", "ia"],
+    "badge": "Proximamente",
+    "isPublished": true
+  }
+]

@@ -1,4 +1,16 @@
-﻿import { createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken, requestJutsu } from '../lib/core.js';
+import { createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken } from '../lib/core.js';
+
+const DELETE_SECRET = 'gatito';
+
+function requireSecret() {
+  const value = window.prompt('Clave de seguridad');
+  if (value === null) return false;
+  if (value !== DELETE_SECRET) {
+    showModal('Clave incorrecta', { title: 'Error' });
+    return false;
+  }
+  return true;
+}
 
 function info(text) {
   return createEl('p', { className: 'muted small', text });
@@ -39,53 +51,6 @@ function buildStat(label, value) {
   return box;
 }
 
-const DEFAULT_MISSION_OFFERS = {
-  red: [
-    { title: 'Red Team', desc: 'Campanas adversariales para medir deteccion y respuesta.', tags: ['adversarial'], image: '/assets/material/ninja1.webp' },
-    { title: 'Pentesting Web', desc: 'Pruebas OWASP con explotacion controlada y plan por riesgo.', tags: ['owasp'], image: '/assets/material/ninja3.webp' },
-    { title: 'Pentesting Infraestructura', desc: 'Evaluacion interna/externa, AD y rutas de ataque.', tags: ['infra', 'ad'], image: '/assets/material/ninja2.webp' },
-    { title: 'Pruebas de sistema operativo', desc: 'Configuracion, servicios y privilegios en Windows/Linux.', tags: ['os', 'hardening'], image: '/assets/material/dojo1.webp' },
-    { title: 'Intrusion fisica', desc: 'Pruebas controladas de acceso fisico y exposicion de activos.', tags: ['fisico'], image: '/assets/material/ninja4.webp' },
-    { title: 'Pruebas de redes WiFi', desc: 'Auditoria WLAN, cifrados, segregacion y ataques comunes.', tags: ['wifi', '802.11'], image: '/assets/material/armeria.webp' },
-  ],
-  blue: [
-    { title: 'SOC Readiness y Detecciones', desc: 'Mapeo ATT&CK, casos de uso SIEM y pruebas de deteccion.', tags: ['SOC', 'detections'], image: '/assets/material/dojo1.webp' },
-    { title: 'Gestion de Vulnerabilidades', desc: 'Descubrimiento, priorizacion (CVSS/EPSS), parchado y verificacion.', tags: ['vulns', 'riesgo'], image: '/assets/material/ninja2.webp' },
-    { title: 'DFIR y Respuesta a Incidentes', desc: 'Forense, contencion, erradicacion y mejora continua.', tags: ['dfir', 'ir'], image: '/assets/material/ninja4.webp' },
-    { title: 'Threat Modeling y Arquitectura Segura', desc: 'STRIDE/ATT&CK y controles por diseno.', tags: ['arquitectura'], image: '/assets/material/ninja3.webp' },
-    { title: 'Hardening y Baselines', desc: 'Benchmarks CIS y politicas para reducir superficie de ataque.', tags: ['cis', 'baseline'], image: '/assets/material/armeria.webp' },
-    { title: 'Seguridad en la Nube', desc: 'Revision IAM, redes y datos en AWS/Azure/GCP.', tags: ['cloud', 'iam'], image: '/assets/material/ninja1.webp' },
-  ],
-  social: [
-    { title: 'Campanas de phishing', desc: 'Simulaciones con metricas (clic, reporte) y retroalimentacion.', tags: ['phishing'], image: '/assets/material/ninja2.webp' },
-    { title: 'Concientizacion de seguridad', desc: 'Sesiones breves para reducir riesgo humano con ejemplos reales.', tags: ['awareness'], image: '/assets/material/dojo1.webp' },
-    { title: 'Simulaciones y talleres', desc: 'Entrenamiento practico para lideres y equipos.', tags: ['taller'], image: '/assets/material/ninja3.webp' },
-    { title: 'Intrusion fisica (SE)', desc: 'Pruebas fisicas con enfoque en ingenieria social.', tags: ['fisico', 'SE'], image: '/assets/material/ninja4.webp' },
-  ],
-};
-
-const MISSION_CATEGORIES = { red: 'Red Team', blue: 'Blue Team', social: 'Ingenieria social' };
-const MISSION_CATEGORY_KEYS = Object.keys(MISSION_CATEGORIES);
-
-function cloneMissionOffers(source = {}) {
-  const copy = {};
-  MISSION_CATEGORY_KEYS.forEach((cat) => {
-    const list = Array.isArray(source?.[cat]) ? source[cat] : [];
-    copy[cat] = list.map(item => ({
-      title: String(item?.title || '').trim(),
-      desc: String(item?.desc || '').trim(),
-      tags: Array.isArray(item?.tags) ? item.tags.map(t => String(t).trim()).filter(Boolean) : [],
-      image: String(item?.image || '').trim(),
-    })).filter(entry => entry.title);
-  });
-  return copy;
-}
-
-function normalizeMissionOffers(data) {
-  if (!data || typeof data !== 'object') return cloneMissionOffers(DEFAULT_MISSION_OFFERS);
-  return cloneMissionOffers(data);
-}
-
 export async function AdminPage() {
   const wrap = createEl('section', { className: 'section page', attrs: { id: 'admin' } });
   const root = createEl('div', { className: 'container admin-container' });
@@ -117,14 +82,14 @@ export async function AdminPage() {
   const btnDash = createEl('button', { className: 'btn active', text: 'Dashboard' });
   const btnReq = createEl('button', { className: 'btn', text: 'Solicitudes' });
   const btnMissions = createEl('button', { className: 'btn', text: 'Misiones' });
-  const btnMissionOffers = createEl('button', { className: 'btn', text: 'Nuevas misiones' });
-  const btnCourses = createEl('button', { className: 'btn', text: 'Nuevos pergaminos' });
+  const btnPdfs = createEl('button', { className: 'btn', text: 'PDFs' });
+  const btnTools = createEl('button', { className: 'btn', text: 'Herramientas' });
   const btnUsers = createEl('button', { className: 'btn', text: 'Usuarios' });
-  tabs.append(btnDash, btnReq, btnMissions, btnMissionOffers, btnCourses, btnUsers);
+  tabs.append(btnDash, btnReq, btnMissions, btnPdfs, btnTools, btnUsers);
   root.appendChild(tabs);
 
   const split = createEl('div', { className: 'admin-split' });
-  split.style.setProperty('--left', '440px');
+  split.style.setProperty('--left', '320px');
   const left = createEl('div', { className: 'admin-pane left' });
   const handle = createEl('div', { className: 'split-handle', attrs: { role: 'separator', 'aria-orientation': 'vertical' } });
   const right = createEl('div', { className: 'admin-pane right' });
@@ -132,12 +97,11 @@ export async function AdminPage() {
   root.appendChild(split);
 
   handle.addEventListener('mousedown', (e) => {
-    if (handle.classList.contains('hidden')) return;
     e.preventDefault();
     const startX = e.clientX;
-    const startLeft = parseInt(getComputedStyle(split).getPropertyValue('--left')) || 440;
+    const startLeft = parseInt(getComputedStyle(split).getPropertyValue('--left')) || 320;
     const onMove = (ev) => {
-      const next = Math.max(320, Math.min(720, startLeft + (ev.clientX - startX)));
+      const next = Math.max(220, Math.min(600, startLeft + (ev.clientX - startX)));
       split.style.setProperty('--left', `${next}px`);
     };
     const onUp = () => {
@@ -148,30 +112,13 @@ export async function AdminPage() {
     document.addEventListener('mouseup', onUp);
   });
 
-  function setLayout({ showRight = true, leftWidth = 440, expandRight = false } = {}) {
-    const width = Math.max(320, Math.min(720, leftWidth));
-    split.style.setProperty('--left', `${width}px`);
-    if (showRight) {
-      split.classList.remove('single');
-      handle.classList.remove('hidden');
-      right.classList.remove('hidden');
-      if (expandRight) right.classList.add('expand'); else right.classList.remove('expand');
-    } else {
-      split.classList.add('single');
-      handle.classList.add('hidden');
-      right.classList.remove('expand');
-      right.classList.add('hidden');
-    }
-  }
-
   function setTab(btn) {
-    [btnDash, btnReq, btnMissions, btnMissionOffers, btnCourses, btnUsers].forEach(b => b.classList.remove('active'));
+    [btnDash, btnReq, btnMissions, btnPdfs, btnTools, btnUsers].forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
 
   async function showDashboard() {
     setTab(btnDash);
-    setLayout({ showRight: true, leftWidth: 420, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Resumen' }), info('Metricas generales del sistema.'));
@@ -189,7 +136,6 @@ export async function AdminPage() {
 
   async function showRequests() {
     setTab(btnReq);
-    setLayout({ showRight: true, leftWidth: 400, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Solicitudes' }), info('Revisa formularios recibidos.'));
@@ -233,33 +179,17 @@ export async function AdminPage() {
         row.appendChild(info(formatDate(item.createdAt)));
         const remove = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
         remove.addEventListener('click', async () => {
-          const jutsu = requestJutsu('Ingresa el jutsu sagrado para eliminar');
-          if (!jutsu) return;
+          if (!requireSecret()) return;
           try {
             const endpoint = state.active === 'course'
               ? `/api/forms/course/${encodeURIComponent(item._id)}`
               : `/api/forms/mission/${encodeURIComponent(item._id)}`;
-            const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
-            if (token) headers.authorization = `Bearer ${token}`;
-            const res = await fetch(endpoint, {
-              method: 'DELETE',
-              headers,
-              credentials: 'include',
-              body: JSON.stringify({ jutsu })
-            });
-            if (!res.ok) {
-              let msg = 'No se pudo eliminar la solicitud';
-              try {
-                const ct = (res.headers.get('content-type') || '').toLowerCase();
-                const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
-                msg = err?.error || err?.message || msg;
-              } catch {}
-              throw new Error(msg);
-            }
+            const res = await fetch(endpoint, { method: 'DELETE', headers: token ? { authorization: `Bearer ${token}` } : {}, credentials: 'include' });
+            if (!res.ok) throw new Error();
             state.data[state.active] = current.filter(x => x._id !== item._id);
             render();
-          } catch (err) {
-            showModal(err.message || 'No se pudo eliminar la solicitud', { title: 'Error' });
+          } catch {
+            showModal('No se pudo eliminar la solicitud', { title: 'Error' });
           }
         });
         row.appendChild(remove);
@@ -284,7 +214,6 @@ export async function AdminPage() {
 
   async function showMissions() {
     setTab(btnMissions);
-    setLayout({ showRight: true, leftWidth: 420, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Misiones' }), info('Crea misiones y asigna shinobi.'));
@@ -419,30 +348,18 @@ export async function AdminPage() {
 
         const remove = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
         remove.addEventListener('click', async () => {
-          const jutsu = requestJutsu('Ingresa el jutsu sagrado para eliminar la mision');
-          if (!jutsu) return;
+          if (!requireSecret()) return;
           try {
-            const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
-            if (token) headers.authorization = `Bearer ${token}`;
             const res = await fetch(`/api/admin/missions/${encodeURIComponent(item.id)}`, {
               method: 'DELETE',
-              headers,
-              body: JSON.stringify({ jutsu }),
+              headers: token ? { authorization: `Bearer ${token}` } : {},
             });
-            if (!res.ok) {
-              let msg = 'No se pudo eliminar la mision';
-              try {
-                const ct = (res.headers.get('content-type') || '').toLowerCase();
-                const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
-                msg = err?.error || err?.message || msg;
-              } catch {}
-              throw new Error(msg);
-            }
+            if (!res.ok) throw new Error();
             const idx = missions.findIndex(m => m.id === item.id);
             if (idx >= 0) missions.splice(idx, 1);
             renderList();
-          } catch (err) {
-            showModal(err.message || 'No se pudo eliminar la mision', { title: 'Error' });
+          } catch {
+            showModal('No se pudo eliminar la mision', { title: 'Error' });
           }
         });
 
@@ -456,578 +373,265 @@ export async function AdminPage() {
     renderList();
   }
 
-  async function showMissionOffers() {
-    setTab(btnMissionOffers);
-    setLayout({ showRight: true, leftWidth: 480, expandRight: true });
+  async function showPdfs() {
+    setTab(btnPdfs);
     left.innerHTML = '';
     right.innerHTML = '';
-    left.append(createEl('h3', { text: 'Nuevas misiones' }), info('Gestiona las ofertas que ven los clientes en la pagina de Misiones.'));
+    left.append(
+      createEl('h3', { text: 'PDFs' }),
+      info('Sube PDF individuales para que aparezcan en la Armeria.')
+    );
 
-    const categories = MISSION_CATEGORY_KEYS;
-    const categoryLabels = MISSION_CATEGORIES;
-    const parseTags = (value) => value.split(/\r?\n|,/).map(t => t.trim()).filter(Boolean);
-
-    let offers = await getJSON('/api/missions.json', cloneMissionOffers(DEFAULT_MISSION_OFFERS));
-    offers = normalizeMissionOffers(offers);
-    let editing = null;
-
-    async function persistOffers(nextState) {
-      const res = await fetch('/api/missions.json', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(nextState),
-      });
-      if (!res.ok) {
-        let msg = 'No se pudieron guardar las misiones';
-        try {
-          const ct = (res.headers.get('content-type') || '').toLowerCase();
-          if (ct.includes('application/json')) {
-            const err = await res.json();
-            msg = err?.error || err?.message || msg;
-          } else {
-            msg = await res.text();
-          }
-        } catch {}
-        throw new Error(msg);
-      }
-    }
-
-    const formCard = createEl('div', { className: 'card admin-mission-editor' });
-    const formHeading = createEl('h3', { text: 'Nueva oferta' });
-    formCard.append(formHeading, info('Estas ofertas alimentan la seccion publica de misiones.'));
-    const form = createEl('form', { className: 'cr-form', attrs: { autocomplete: 'off' } });
-
-    const addRow = (label, node) => {
-      const row = createEl('div', { className: 'form-row' });
-      row.append(createEl('label', { text: label }));
-      row.appendChild(node);
-      form.appendChild(row);
-      return node;
-    };
-
-    const inputTitle = addRow('Titulo', createEl('input', { attrs: { type: 'text', required: '', placeholder: 'Pentesting ofensivo' } }));
-    const selectCategory = document.createElement('select');
-    selectCategory.className = 'select';
-    categories.forEach((cat, idx) => selectCategory.append(new Option(categoryLabels[cat], cat, idx === 0, idx === 0)));
-    addRow('Categoria', selectCategory);
-    const inputDesc = addRow('Descripcion', createEl('textarea', { attrs: { rows: '3', placeholder: 'Que problema resuelve esta mision?' } }));
-    const inputTags = addRow('Tags', createEl('textarea', { attrs: { rows: '2', placeholder: 'ofensiva, red team, adversarial' } }));
-    form.appendChild(info('Separa los tags por coma o salto de linea.'));
-
-    const imageField = createEl('div', { className: 'mission-image-field' });
-    const imagePreview = createEl('div', { className: 'mission-image-preview', text: 'Sin imagen' });
-    const inputImage = createEl('input', { attrs: { type: 'url', placeholder: 'https://...' } });
-    const uploadBtn = createEl('button', { className: 'btn btn-sm', text: 'Subir archivo', attrs: { type: 'button' } });
-    const fileInput = createEl('input', { attrs: { type: 'file', accept: 'image/*' } });
-    fileInput.style.display = 'none';
-    imageField.append(imagePreview, inputImage, uploadBtn, fileInput);
-    addRow('Imagen', imageField);
-
-    const updateImagePreview = (value) => {
-      const src = String(value || '').trim();
-      imagePreview.innerHTML = '';
-      if (!src) {
-        imagePreview.textContent = 'Sin imagen';
-        return;
-      }
-      const img = document.createElement('img');
-      img.src = src;
-      img.alt = 'Vista previa oferta';
-      img.className = 'mission-image-thumb';
-      imagePreview.appendChild(img);
-    };
-
-    inputImage.addEventListener('input', () => updateImagePreview(inputImage.value));
-    uploadBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', async () => {
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) return;
-      uploadBtn.disabled = true;
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const headers = token ? { authorization: `Bearer ${token}` } : {};
-        const res = await fetch('/api/admin/upload/image', { method: 'POST', headers, body: fd });
-        if (!res.ok) throw new Error('No se pudo subir la imagen');
-        const data = await res.json();
-        if (!data?.url) throw new Error('Respuesta invalida al subir imagen');
-        inputImage.value = data.url;
-        updateImagePreview(data.url);
-      } catch (err) {
-        showModal(err.message || 'Error al subir imagen', { title: 'Error' });
-      } finally {
-        uploadBtn.disabled = false;
-        fileInput.value = '';
-      }
-    });
-
-    updateImagePreview('');
-
-    const actionRow = createEl('div', { className: 'form-actions' });
-    const cancelBtn = createEl('button', { className: 'btn btn-ghost', text: 'Cancelar', attrs: { type: 'button' } });
-    cancelBtn.style.display = 'none';
-    const submitBtn = createEl('button', { className: 'btn btn-primary', text: 'Guardar oferta' });
-    actionRow.append(cancelBtn, submitBtn);
-    form.appendChild(actionRow);
-    formCard.appendChild(form);
-    left.appendChild(formCard);
-
-    function resetForm() {
-      editing = null;
-      formHeading.textContent = 'Nueva oferta';
-      submitBtn.textContent = 'Guardar oferta';
-      cancelBtn.style.display = 'none';
-      cancelBtn.disabled = false;
-      submitBtn.disabled = false;
-      form.reset();
-      if (selectCategory.options.length) selectCategory.value = selectCategory.options[0].value;
-      updateImagePreview('');
-    }
-
-    function populateForm(category, index) {
-      const item = offers?.[category]?.[index];
-      if (!item) return;
-      editing = { category, index };
-      formHeading.textContent = `Editar ${item.title || 'oferta'}`;
-      submitBtn.textContent = 'Guardar cambios';
-      cancelBtn.style.display = 'inline-flex';
-      inputTitle.value = item.title || '';
-      selectCategory.value = category;
-      inputDesc.value = item.desc || '';
-      inputTags.value = Array.isArray(item.tags) ? item.tags.join(', ') : '';
-      inputImage.value = item.image || '';
-      updateImagePreview(item.image || '');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    cancelBtn.addEventListener('click', () => resetForm());
-
+    const formCard = createEl('div', { className: 'card' });
+    formCard.appendChild(createEl('h3', { text: 'Subir PDF' }));
+    const form = createEl('form', { className: 'cr-form' });
+    const fileRow = createEl('div', { className: 'form-row' });
+    const fileInput = createEl('input', { attrs: { type: 'file', accept: '.pdf', required: '' } });
+    fileRow.append(createEl('label', { text: 'Archivo PDF' }), fileInput);
+    form.appendChild(fileRow);
+    const submit = createEl('button', { className: 'btn btn-primary', text: 'Subir PDF' });
+    const actions = createEl('div', { className: 'form-actions start' });
+    actions.appendChild(submit);
+    form.appendChild(actions);
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      submitBtn.disabled = true;
-      cancelBtn.disabled = true;
+      if (!fileInput.files || !fileInput.files[0]) {
+        showModal('Selecciona un PDF antes de subir', { title: 'Aviso' });
+        return;
+      }
+      submit.disabled = true;
       try {
-        const entry = {
-          title: inputTitle.value.trim(),
-          desc: inputDesc.value.trim(),
-          tags: parseTags(inputTags.value),
-          image: inputImage.value.trim(),
-        };
-        if (!entry.title) throw new Error('Titulo requerido');
-        const category = selectCategory.value || 'red';
-        const nextState = cloneMissionOffers(offers);
-        if (editing) {
-          const { category: prevCategory, index } = editing;
-          if (!Array.isArray(nextState[prevCategory]) || !nextState[prevCategory][index]) {
-            throw new Error('La oferta seleccionada ya no existe');
-          }
-          if (prevCategory === category) {
-            nextState[prevCategory][index] = entry;
-          } else {
-            nextState[prevCategory].splice(index, 1);
-            nextState[category].push(entry);
-          }
-        } else {
-          nextState[category].push(entry);
-        }
-        await persistOffers(nextState);
-        offers = nextState;
-        const message = editing ? 'Oferta actualizada' : 'Oferta creada';
-        resetForm();
-        renderList();
-        showModal(message, { title: 'Listo' });
+        const body = new FormData();
+        body.append('file', fileInput.files[0]);
+        const headers = token ? { authorization: `Bearer ${token}` } : {};
+        const res = await fetch('/api/admin/upload/pdf', { method: 'POST', headers, body });
+        if (!res.ok) throw new Error('No se pudo subir el PDF');
+        fileInput.value = '';
+        await loadList();
+        showModal('PDF subido correctamente', { title: 'Listo' });
       } catch (err) {
-        showModal(err.message || 'No se pudo guardar la oferta', { title: 'Error' });
+        showModal(err.message || 'No se pudo subir el PDF', { title: 'Error' });
       } finally {
-        submitBtn.disabled = false;
-        cancelBtn.disabled = false;
+        submit.disabled = false;
       }
     });
+    formCard.appendChild(form);
+    right.appendChild(formCard);
 
-    const listCard = createEl('div', { className: 'card mission-offer-list' });
+    const listCard = createEl('div', { className: 'card' });
+    listCard.appendChild(createEl('h3', { text: 'Biblioteca' }));
+    const listWrap = createEl('div', { className: 'pdf-admin-list' });
+    listCard.appendChild(listWrap);
     right.appendChild(listCard);
+
+    async function loadList() {
+      const list = await getJSON('/api/pdfs.json', []);
+      listWrap.innerHTML = '';
+      if (!list.length) {
+        listWrap.appendChild(info('Aun no hay PDFs subidos.'));
+        return;
+      }
+      list.forEach(item => {
+        const row = createEl('div', { className: 'pdf-admin-item' });
+        row.appendChild(createEl('strong', { text: item.name }));
+        const actions = createEl('div', { className: 'pdf-admin-actions' });
+        const link = createEl('a', { className: 'btn btn-sm btn-ghost', text: 'Ver', attrs: { href: item.url, target: '_blank', rel: 'noopener noreferrer' } });
+        actions.appendChild(link);
+        row.appendChild(actions);
+        listWrap.appendChild(row);
+      });
+    }
+
+    loadList();
+  }
+
+  async function showTools() {
+    setTab(btnTools);
+    left.innerHTML = '';
+    right.innerHTML = '';
+    left.append(
+      createEl('h3', { text: 'Herramientas' }),
+      info('Publica scripts, plantillas y utilidades que apareceran en la Armeria.')
+    );
+
+    const tools = await getJSON('/api/admin/tools', []);
+
+    const formCard = createEl('div', { className: 'card' });
+    formCard.appendChild(createEl('h3', { text: 'Nueva herramienta' }));
+    const form = createEl('form', { className: 'cr-form' });
+    const addRow = (label, field) => {
+      const row = createEl('div', { className: 'form-row' });
+      row.append(createEl('label', { text: label }), field);
+      form.appendChild(row);
+    };
+    const titleInput = createEl('input', { attrs: { type: 'text', placeholder: 'Nombre', required: '' } });
+    const descInput = createEl('textarea', { attrs: { rows: '2', placeholder: 'Descripcion corta' } });
+    const linkInput = createEl('input', { attrs: { type: 'url', placeholder: 'https://tu-herramienta' } });
+    const imageInput = createEl('input', { attrs: { type: 'text', placeholder: '/assets/material/tool.webp' } });
+    const tagsInput = createEl('input', { attrs: { type: 'text', placeholder: 'tags separados por coma' } });
+    const publishWrap = createEl('div', { className: 'toggle-field' });
+    const publishInput = document.createElement('input');
+    publishInput.type = 'checkbox';
+    const publishText = createEl('span', { className: 'muted small', text: 'Mostrar al instante en Armeria' });
+    publishWrap.append(publishInput, publishText);
+    addRow('Titulo', titleInput);
+    addRow('Descripcion', descInput);
+    addRow('Link', linkInput);
+    addRow('Imagen', imageInput);
+    addRow('Tags', tagsInput);
+    addRow('Publicada', publishWrap);
+    const submit = createEl('button', { className: 'btn btn-primary', text: 'Agregar' });
+    const actions = createEl('div', { className: 'form-actions start' });
+    actions.appendChild(submit);
+    form.appendChild(actions);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submit.disabled = true;
+      try {
+        const payload = {
+          title: titleInput.value.trim(),
+          description: descInput.value.trim(),
+          link: linkInput.value.trim(),
+          image: imageInput.value.trim(),
+          tags: tagsInput.value.split(',').map(t => t.trim()).filter(Boolean),
+          isPublished: publishInput.checked,
+        };
+        if (!payload.title) throw new Error('El titulo es obligatorio');
+        const res = await fetch('/api/admin/tools', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('No se pudo crear la herramienta');
+        const created = await res.json();
+        tools.unshift(created);
+        titleInput.value = '';
+        descInput.value = '';
+        linkInput.value = '';
+        imageInput.value = '';
+        tagsInput.value = '';
+        publishInput.checked = false;
+        renderList();
+      } catch (err) {
+        showModal(err.message || 'No se pudo crear la herramienta', { title: 'Error' });
+      } finally {
+        submit.disabled = false;
+      }
+    });
+    formCard.appendChild(form);
+    right.appendChild(formCard);
+
+    const listCard = createEl('div', { className: 'card tool-list' });
+    right.appendChild(listCard);
+
+    const makeRow = (label, field) => {
+      const row = createEl('div', { className: 'form-row' });
+      row.append(createEl('label', { text: label }), field);
+      return row;
+    };
 
     function renderList() {
       listCard.innerHTML = '';
-      listCard.appendChild(createEl('h3', { text: 'Ofertas publicadas' }));
-      const total = categories.reduce((sum, cat) => sum + (offers?.[cat]?.length || 0), 0);
-      if (!total) {
-        listCard.appendChild(info('Aun no hay ofertas configuradas.'));
+      listCard.appendChild(createEl('h3', { text: `Herramientas (${tools.length})` }));
+      if (!tools.length) {
+        listCard.appendChild(info('Aun no has agregado herramientas.'));
         return;
       }
-      categories.forEach(cat => {
-        const items = Array.isArray(offers[cat]) ? offers[cat] : [];
-        const section = createEl('div', { className: 'mission-offer-category' });
-        section.appendChild(createEl('h4', { text: `${categoryLabels[cat]} (${items.length})` }));
-        const grid = createEl('div', { className: 'mission-offer-items' });
-        if (!items.length) {
-          grid.appendChild(info('Sin ofertas en esta categoria.'));
-        } else {
-          items.forEach((item, index) => {
-            const card = createEl('div', { className: 'mission-offer-item' });
-            card.appendChild(createEl('h5', { text: item.title || 'Oferta' }));
-            if (item.image) {
-              const thumb = document.createElement('img');
-              thumb.src = item.image;
-              thumb.alt = item.title || 'Imagen de la mision';
-              thumb.className = 'mission-offer-thumb';
-              card.appendChild(thumb);
-            }
-            if (item.desc) card.appendChild(createEl('p', { className: 'muted small', text: item.desc }));
-            if (item.tags && item.tags.length) {
-              card.appendChild(createEl('p', { className: 'muted tiny', text: `Tags: ${item.tags.join(', ')}` }));
-            }
-            const actions = createEl('div', { className: 'mission-offer-actions' });
-            const editBtn = createEl('button', { className: 'btn btn-sm btn-primary', text: 'Editar' });
-            editBtn.addEventListener('click', () => populateForm(cat, index));
-            const deleteBtn = createEl('button', { className: 'btn btn-sm btn-danger', text: 'Eliminar' });
-            deleteBtn.addEventListener('click', async () => {
-              if (!window.confirm('Eliminar esta oferta?')) return;
-              const nextState = cloneMissionOffers(offers);
-              if (!Array.isArray(nextState[cat])) return;
-              nextState[cat].splice(index, 1);
-              try {
-                await persistOffers(nextState);
-                offers = nextState;
-                if (editing && editing.category === cat) {
-                  if (editing.index === index) {
-                    resetForm();
-                  } else if (editing.index > index) {
-                    editing.index -= 1;
-                  }
-                }
-                renderList();
-              } catch (err) {
-                showModal(err.message || 'No se pudo eliminar la oferta', { title: 'Error' });
-              }
+      tools.forEach((tool) => {
+        const card = createEl('div', { className: 'tool-card' });
+        const header = createEl('div', { className: 'tool-card-head' });
+        header.appendChild(createEl('h4', { text: tool.title || 'Herramienta' }));
+        const status = createEl('span', { className: tool.isPublished ? 'badge role-shogun' : 'badge', text: tool.isPublished ? 'Publicada' : 'Borrador' });
+        header.appendChild(status);
+        card.appendChild(header);
+
+        const formWrap = createEl('div', { className: 'tool-form' });
+        const titleField = createEl('input', { attrs: { type: 'text' } });
+        titleField.value = tool.title || '';
+        formWrap.appendChild(makeRow('Titulo', titleField));
+        const descField = createEl('textarea', { attrs: { rows: '2' } });
+        descField.value = tool.description || '';
+        formWrap.appendChild(makeRow('Descripcion', descField));
+        const linkField = createEl('input', { attrs: { type: 'text' } });
+        linkField.value = tool.link || '';
+        formWrap.appendChild(makeRow('Link', linkField));
+        const imageField = createEl('input', { attrs: { type: 'text' } });
+        imageField.value = tool.image || '';
+        formWrap.appendChild(makeRow('Imagen', imageField));
+        const tagsField = createEl('input', { attrs: { type: 'text' } });
+        tagsField.value = Array.isArray(tool.tags) ? tool.tags.join(', ') : '';
+        formWrap.appendChild(makeRow('Tags', tagsField));
+        const publishField = createEl('div', { className: 'toggle-field' });
+        const publishToggle = document.createElement('input');
+        publishToggle.type = 'checkbox';
+        publishToggle.checked = !!tool.isPublished;
+        const publishHint = createEl('span', { className: 'muted small', text: 'Visible' });
+        publishField.append(publishToggle, publishHint);
+        formWrap.appendChild(makeRow('Publicada', publishField));
+
+        const btnRow = createEl('div', { className: 'form-actions start' });
+        const save = createEl('button', { className: 'btn btn-primary btn-sm', text: 'Guardar' });
+        const remove = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
+        btnRow.append(save, remove);
+        formWrap.appendChild(btnRow);
+        card.appendChild(formWrap);
+        listCard.appendChild(card);
+
+        save.addEventListener('click', async () => {
+          save.disabled = true;
+          try {
+            const payload = {
+              title: titleField.value.trim(),
+              description: descField.value.trim(),
+              link: linkField.value.trim(),
+              image: imageField.value.trim(),
+              tags: tagsField.value.split(',').map(t => t.trim()).filter(Boolean),
+              isPublished: publishToggle.checked,
+            };
+            if (!payload.title) throw new Error('El titulo es obligatorio');
+            const res = await fetch(`/api/admin/tools/${encodeURIComponent(tool.id)}`, {
+              method: 'PUT',
+              headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+              body: JSON.stringify(payload),
             });
-            actions.append(editBtn, deleteBtn);
-            card.appendChild(actions);
-            grid.appendChild(card);
-          });
-        }
-        section.appendChild(grid);
-        listCard.appendChild(section);
+            if (!res.ok) throw new Error('No se pudo actualizar la herramienta');
+            const updated = await res.json();
+            const idx = tools.findIndex(t => t.id === tool.id);
+            if (idx >= 0) tools[idx] = updated;
+            renderList();
+          } catch (err) {
+            showModal(err.message || 'No se pudo actualizar la herramienta', { title: 'Error' });
+          } finally {
+            save.disabled = false;
+          }
+        });
+
+        remove.addEventListener('click', async () => {
+          if (!requireSecret()) return;
+          remove.disabled = true;
+          try {
+            const res = await fetch(`/api/admin/tools/${encodeURIComponent(tool.id)}`, {
+              method: 'DELETE',
+              headers: token ? { authorization: `Bearer ${token}` } : {},
+            });
+            if (!res.ok) throw new Error('No se pudo eliminar la herramienta');
+            const idx = tools.findIndex(t => t.id === tool.id);
+            if (idx >= 0) tools.splice(idx, 1);
+            renderList();
+          } catch (err) {
+            showModal(err.message || 'No se pudo eliminar la herramienta', { title: 'Error' });
+          } finally {
+            remove.disabled = false;
+          }
+        });
       });
     }
 
     renderList();
   }
 
-
-  async function showCourseCreator() {
-    setTab(btnCourses);
-    setLayout({ showRight: true, leftWidth: 520, expandRight: true });
-    left.innerHTML = '';
-    right.innerHTML = '';
-
-    let editingCourse = null;
-
-    const formCard = createEl('div', { className: 'card admin-course-editor' });
-    const formHeading = createEl('h3', { text: 'Nuevo curso virtual' });
-    const helper = info('Completa los datos base. Los modulos quedan listos en Pergaminos para agregar videos o material.');
-    formCard.append(formHeading, helper);
-
-    const form = createEl('form', { className: 'cr-form course-form', attrs: { autocomplete: 'off' } });
-
-    const addRow = (label, node) => {
-      const row = createEl('div', { className: 'form-row' });
-      row.append(createEl('label', { text: label }));
-      row.appendChild(node);
-      form.appendChild(row);
-      return node;
-    };
-
-    const inputTitle = addRow('Titulo', createEl('input', { attrs: { type: 'text', required: '', placeholder: 'Hacking Etico' } }));
-    const inputDesc = addRow('Descripcion', createEl('textarea', { attrs: { rows: '4', placeholder: 'Descripcion corta del curso.' } }));
-
-    const selectMod = document.createElement('select');
-    selectMod.className = 'select';
-    selectMod.append(new Option('Virtual', 'virtual', true, true), new Option('Presencial', 'presencial'));
-    addRow('Modalidad', selectMod);
-
-    const inputLevel = addRow('Nivel', createEl('input', { attrs: { type: 'text', placeholder: 'Intermedio' } }));
-    const inputDuration = addRow('Duracion', createEl('input', { attrs: { type: 'text', placeholder: '6 semanas' } }));
-    const inputPrice = addRow('Precio (COP)', createEl('input', { attrs: { type: 'text', placeholder: '320000' } }));
-    const inputLink = addRow('Link de pago', createEl('input', { attrs: { type: 'url', placeholder: 'https://pay.coderonin.co/mi-curso' } }));
-    form.appendChild(info('Si aun no tienes enlace de pago, deja el campo vacio para mostrar "Proximamente" en Dojo.'));
-    const inputProductId = addRow('ID producto Hotmart', createEl('input', { attrs: { type: 'text', placeholder: 'HOTMART_PRODUCT_ID' } }));
-    form.appendChild(info('Copia el ID del producto desde Hotmart Notify para enlazar compras automaticas.'));
-
-    const inputTags = addRow('Tags', createEl('textarea', { attrs: { rows: '2', placeholder: 'pentesting, ofensiva, labs' } }));
-    const inputSkills = addRow('Habilidades', createEl('textarea', { attrs: { rows: '3', placeholder: 'Una habilidad por linea' } }));
-    const inputOutcome = addRow('Impacto', createEl('textarea', { attrs: { rows: '3', placeholder: 'Describe el resultado o promesa del curso.' } }));
-    const inputModules = addRow('Modulos', createEl('textarea', { attrs: { rows: '4', placeholder: 'Modulo 1 - Introduccion' } }));
-    form.appendChild(info('Los modulos se crean como pergaminos vacios. Completa videos o recursos desde la seccion Pergaminos.'));
-
-    const imgRow = createEl('div', { className: 'form-row course-image-row' });
-    imgRow.append(createEl('label', { text: 'Imagen' }));
-    const imgField = createEl('div', { className: 'course-image-field' });
-    const imgPreview = createEl('div', { className: 'course-image-preview', text: 'Sin imagen' });
-    const inputImage = createEl('input', { attrs: { type: 'text', placeholder: 'https://...' } });
-    const fileInput = createEl('input', { attrs: { type: 'file', accept: 'image/*' } });
-    const uploadBtn = createEl('button', { className: 'btn btn-sm', text: 'Subir archivo', attrs: { type: 'button' } });
-    imgField.append(imgPreview, inputImage, fileInput, uploadBtn);
-    imgRow.appendChild(imgField);
-    form.appendChild(imgRow);
-
-    const actions = createEl('div', { className: 'form-actions' });
-    const cancelBtn = createEl('button', { className: 'btn btn-ghost', text: 'Cancelar', attrs: { type: 'button' } });
-    cancelBtn.style.display = 'none';
-    const submitBtn = createEl('button', { className: 'btn btn-primary', text: 'Crear curso' });
-    actions.append(cancelBtn, submitBtn);
-    form.appendChild(actions);
-
-    formCard.appendChild(form);
-    left.appendChild(formCard);
-
-    const parseList = (value) => value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
-    const formatPrice = (value) => {
-      if (value == null || value === '') return 'n/d';
-      const num = Number(String(value).replace(/[^0-9.]/g, ''));
-      if (!Number.isFinite(num)) return value;
-      try {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(num);
-      } catch {
-        return `$${num}`;
-      }
-    };
-
-    const updatePreview = () => {
-      imgPreview.innerHTML = '';
-      const url = (inputImage.value || '').trim();
-      if (url) {
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = 'preview';
-        img.loading = 'lazy';
-        imgPreview.appendChild(img);
-      } else {
-        imgPreview.textContent = 'Sin imagen';
-      }
-    };
-
-    cancelBtn.addEventListener('click', () => resetForm());
-
-    uploadBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const file = fileInput.files && fileInput.files[0];
-      if (!file) {
-        showModal('Selecciona un archivo de imagen.', { title: 'Atencion' });
-        return;
-      }
-      uploadBtn.disabled = true;
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const token = getToken();
-        const headers = token ? { authorization: `Bearer ${token}` } : {};
-        const res = await fetch('/api/admin/upload/image', { method: 'POST', headers, body: fd });
-        if (!res.ok) throw new Error('No se pudo subir la imagen');
-        const data = await res.json();
-        inputImage.value = data.url || '';
-        updatePreview();
-      } catch (err) {
-        showModal(err.message || 'Error al subir imagen', { title: 'Error' });
-      } finally {
-        uploadBtn.disabled = false;
-      }
-    });
-
-    function resetForm() {
-      editingCourse = null;
-      formHeading.textContent = 'Nuevo curso virtual';
-      submitBtn.textContent = 'Crear curso';
-      cancelBtn.style.display = 'none';
-      form.reset();
-      selectMod.value = 'virtual';
-      updatePreview();
-    }
-
-    function populateForm(course) {
-      const courseId = course && (course._id || course.id);
-      if (!courseId) return;
-      editingCourse = {
-        ...course,
-        _id: String(courseId),
-      };
-      formHeading.textContent = `Editar ${course.title || 'curso'}`;
-      submitBtn.textContent = 'Guardar cambios';
-      cancelBtn.style.display = 'inline-flex';
-      inputTitle.value = course.title || '';
-      inputDesc.value = course.description || '';
-      selectMod.value = course.modalidad || 'virtual';
-      inputLevel.value = course.level || '';
-      inputDuration.value = course.duration || '';
-      inputPrice.value = course.price || '';
-      inputLink.value = course.link || '';
-      inputProductId.value = course.productId || '';
-      inputTags.value = Array.isArray(course.tags) ? course.tags.join(', ') : '';
-      inputSkills.value = Array.isArray(course.skills) ? course.skills.join(', ') : '';
-      inputOutcome.value = course.outcome || '';
-      inputModules.value = '';
-      inputImage.value = course.image || '';
-      updatePreview();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    async function loadCourses() {
-      right.innerHTML = '';
-      const summary = createEl('div', { className: 'card admin-course-summary' });
-      summary.append(createEl('h3', { text: 'Cursos publicados' }), info('Aparecen automaticamente en Dojo y se pueden editar en Pergaminos.'));
-      const data = await getJSON('/api/courses.json', []);
-      if (!Array.isArray(data) || !data.length) {
-        summary.appendChild(createEl('div', { className: 'course-empty', text: 'Aun no hay cursos registrados.' }));
-        right.appendChild(summary);
-        return;
-      }
-      const list = createEl('div', { className: 'course-admin-list' });
-      data.forEach(course => {
-        const courseId = course && (course._id || course.id || course.title);
-        const stringId = courseId ? String(courseId) : '';
-        const card = createEl('div', { className: 'admin-course-card' });
-        card.appendChild(createEl('h4', { text: course.title || 'Curso' }));
-        card.appendChild(createEl('p', { className: 'muted small', text: `Modalidad: ${course.modalidad || 'virtual'} · Nivel: ${course.level || 'n/d'} · Duracion: ${course.duration || 'n/d'}` }));
-        card.appendChild(createEl('p', { className: 'muted small', text: `Valor: ${formatPrice(course.price)}` }));
-        if (course.productId) {
-          card.appendChild(createEl('p', { className: 'muted tiny', text: `Product ID: ${course.productId}` }));
-        }
-        const linkWrap = createEl('div', { className: 'course-admin-link' });
-        const hasLink = Boolean(course.link);
-        const anchor = createEl('a', { text: hasLink ? 'Ver link de pago' : 'Proximamente', attrs: hasLink ? { href: course.link, target: '_blank', rel: 'noopener noreferrer' } : {} });
-        if (!hasLink) anchor.classList.add('disabled');
-        linkWrap.appendChild(anchor);
-        card.appendChild(linkWrap);
-        card.appendChild(createEl('p', { className: 'muted tiny', text: 'Gestiona contenidos detallados desde Pergaminos.' }));
-
-        const controls = createEl('div', { className: 'course-admin-actions' });
-        const editBtn = createEl('button', { className: 'btn btn-sm btn-primary', text: 'Editar' });
-        editBtn.addEventListener('click', () => populateForm({ ...course, id: stringId }));
-        controls.appendChild(editBtn);
-
-        const deleteBtn = createEl('button', { className: 'btn btn-sm btn-danger', text: 'Eliminar' });
-        deleteBtn.addEventListener('click', async () => {
-          const jutsu = requestJutsu('Ingresa el jutsu sagrado para eliminar el curso');
-          if (!jutsu || !stringId) return;
-          try {
-            const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
-            const token = getToken();
-            if (token) headers.authorization = `Bearer ${token}`;
-            const res = await fetch(`/api/admin/courses/${encodeURIComponent(stringId)}`, {
-              method: 'DELETE',
-              headers,
-              credentials: 'include',
-              body: JSON.stringify({ jutsu })
-            });
-            if (!res.ok) {
-              let msg = 'No se pudo eliminar el curso';
-              try {
-                const ct = (res.headers.get('content-type') || '').toLowerCase();
-                const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
-                msg = err?.error || err?.message || msg;
-              } catch {}
-              throw new Error(msg);
-            }
-            if (editingCourse && editingCourse._id === stringId) resetForm();
-            await loadCourses();
-          } catch (err) {
-            showModal(err.message || 'No se pudo eliminar el curso', { title: 'Error' });
-          }
-        });
-        controls.appendChild(deleteBtn);
-        card.appendChild(controls);
-
-        list.appendChild(card);
-      });
-      summary.appendChild(list);
-      right.appendChild(summary);
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      submitBtn.disabled = true;
-      try {
-        const title = inputTitle.value.trim();
-        if (!title) throw new Error('El titulo es obligatorio');
-        const link = inputLink.value.trim();
-        if (!editingCourse && !link) throw new Error('El link de pago es obligatorio');
-
-        const payload = {
-          title,
-          description: inputDesc.value.trim(),
-          modalidad: selectMod.value,
-          level: inputLevel.value.trim(),
-          duration: inputDuration.value.trim(),
-          price: inputPrice.value.trim(),
-          link,
-          image: inputImage.value.trim(),
-          productId: inputProductId.value.trim(),
-          tags: parseList(inputTags.value),
-          skills: parseList(inputSkills.value),
-          outcome: inputOutcome.value.trim(),
-        };
-
-        const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
-        const token = getToken();
-        if (token) headers.authorization = `Bearer ${token}`;
-
-        if (editingCourse) {
-          const jutsu = requestJutsu('Ingresa el jutsu sagrado para actualizar el curso');
-          if (!jutsu) {
-            submitBtn.disabled = false;
-            return;
-          }
-          payload.jutsu = jutsu;
-          const res = await fetch(`/api/admin/courses/${encodeURIComponent(editingCourse._id)}`, {
-            method: 'PUT',
-            headers,
-            credentials: 'include',
-            body: JSON.stringify(payload)
-          });
-          if (!res.ok) {
-            let message = 'No se pudo actualizar el curso';
-            try {
-              const ct = (res.headers.get('content-type') || '').toLowerCase();
-              const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
-              message = err?.error || err?.message || message;
-            } catch {}
-            throw new Error(message);
-          }
-          showModal('Curso actualizado', { title: 'Listo' });
-        } else {
-          payload.modules = parseList(inputModules.value);
-          const res = await fetch('/api/admin/courses', {
-            method: 'POST',
-            headers,
-            credentials: 'include',
-            body: JSON.stringify(payload)
-          });
-          if (!res.ok) {
-            let message = 'No se pudo crear el curso';
-            try {
-              const err = await res.json();
-              message = err?.error || message;
-            } catch {}
-            throw new Error(message);
-          }
-          showModal('Curso creado. Revisa Pergaminos para agregar contenido.', { title: 'Listo' });
-        }
-
-        resetForm();
-        await loadCourses();
-      } catch (err) {
-        showModal(err.message || 'Error al guardar el curso', { title: 'Error' });
-      } finally {
-        submitBtn.disabled = false;
-      }
-    });
-
-    resetForm();
-    await loadCourses();
-  }
   async function showUsers() {
     setTab(btnUsers);
-    setLayout({ showRight: true, leftWidth: 420, expandRight: true });
     left.innerHTML = '';
     right.innerHTML = '';
     left.append(createEl('h3', { text: 'Usuarios' }), info('Actualiza roles y accesos manuales.'));
@@ -1131,8 +735,6 @@ export async function AdminPage() {
       const toggleBtn = createEl('button', { className: 'btn', text: user.active ? 'Desactivar' : 'Activar' });
       const saveBtn = createEl('button', { className: 'btn btn-primary', text: 'Guardar' });
       saveBtn.style.marginLeft = '8px';
-      const passwordBtn = createEl('button', { className: 'btn btn-ghost', text: 'Cambiar clave' });
-      passwordBtn.style.marginLeft = '8px';
 
       toggleBtn.addEventListener('click', async () => {
         try {
@@ -1158,7 +760,7 @@ export async function AdminPage() {
           });
           if (!resRoles.ok) throw new Error();
           const coursesPayload = Array.from(assignedCourses);
-    const parseList = (value) => value.split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean);
+          const servicesPayload = serviceArea.value.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
           const resAccess = await fetch(`/api/admin/access-map/${user._id}`, {
             method: 'PUT',
             headers,
@@ -1171,41 +773,7 @@ export async function AdminPage() {
         }
       });
 
-      passwordBtn.addEventListener('click', async () => {
-        try {
-          const newPassword = window.prompt('Nueva contraseÃ±a (8+ caracteres, una mayuscula y un simbolo)');
-          if (!newPassword) return;
-          const confirmPassword = window.prompt('Confirma la nueva contraseÃ±a');
-          if (!confirmPassword || confirmPassword !== newPassword) {
-            showModal('Las contraseÃ±as no coinciden', { title: 'Error' });
-            return;
-          }
-          const jutsu = requestJutsu('Ingresa el jutsu sagrado para cambiar la contraseÃ±a');
-          if (!jutsu) return;
-          const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
-          if (token) headers.authorization = `Bearer ${token}`;
-          const res = await fetch(`/api/admin/users/${user._id}/password`, {
-            method: 'PUT',
-            headers,
-            credentials: 'include',
-            body: JSON.stringify({ password: newPassword, confirmPassword, jutsu })
-          });
-          if (!res.ok) {
-            let msg = 'No se pudo cambiar la contraseÃ±a';
-            try {
-              const ct = (res.headers.get('content-type') || '').toLowerCase();
-              const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
-              msg = err?.error || err?.message || msg;
-            } catch {}
-            throw new Error(msg);
-          }
-          showModal('ContraseÃ±a actualizada', { title: 'Listo' });
-        } catch (err) {
-          showModal(err.message || 'No se pudo cambiar la contraseÃ±a', { title: 'Error' });
-        }
-      });
-
-      actionsCell.append(toggleBtn, saveBtn, passwordBtn);
+      actionsCell.append(toggleBtn, saveBtn);
       tr.appendChild(actionsCell);
       tr.appendChild(createEl('td', { text: (user.createdAt || '').split('T')[0] }));
       tbody.appendChild(tr);
@@ -1217,8 +785,8 @@ export async function AdminPage() {
   btnDash.addEventListener('click', showDashboard);
   btnReq.addEventListener('click', showRequests);
   btnMissions.addEventListener('click', showMissions);
-  btnMissionOffers.addEventListener('click', showMissionOffers);
-  btnCourses.addEventListener('click', showCourseCreator);
+  btnPdfs.addEventListener('click', showPdfs);
+  btnTools.addEventListener('click', showTools);
   btnUsers.addEventListener('click', showUsers);
 
   await showDashboard();
@@ -1226,4 +794,3 @@ export async function AdminPage() {
   wrap.appendChild(root);
   return wrap;
 }
-

@@ -1,7 +1,18 @@
-import { createEl, showModal, updateAuthNav, getJSON, getToken, navigate, requestJutsu } from '../lib/core.js'
+﻿import { createEl, showModal, updateAuthNav, getJSON, getToken, navigate } from '../lib/core.js'
 
+const DELETE_SECRET = 'gatito';
 const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
 const MAX_PDF_BYTES = 25 * 1024 * 1024;
+
+function requireSecret() {
+  const value = window.prompt('Clave de seguridad');
+  if (value === null) return false;
+  if (value !== DELETE_SECRET) {
+    showModal('Clave incorrecta', { title: 'Error' });
+    return false;
+  }
+  return true;
+}
 
 function info(text) {
   return createEl('p', { className: 'muted small', text });
@@ -192,23 +203,13 @@ export async function PergaminosPage() {
       }
       const remove = createEl('button', { className: 'btn btn-danger btn-sm', text: 'Eliminar' });
       remove.addEventListener('click', async () => {
-        const jutsu = requestJutsu('Ingresa el jutsu sagrado para eliminar el modulo');
-        if (!jutsu) return;
+        if (!requireSecret()) return;
         remove.disabled = true;
         try {
           const token = getToken();
-          const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
-          if (token) headers.authorization = `Bearer ${token}`;
-          const resp = await fetch(`/api/instructor/courses/modules/${encodeURIComponent(mod.id)}`, { method: 'DELETE', headers, credentials: 'include', body: JSON.stringify({ jutsu }) });
-          if (!resp.ok) {
-            let msg = 'No se pudo eliminar';
-            try {
-              const ct = (resp.headers.get('content-type') || '').toLowerCase();
-              const err = ct.includes('application/json') ? await resp.json() : JSON.parse(await resp.text());
-              msg = err?.error || err?.message || msg;
-            } catch {}
-            throw new Error(msg);
-          }
+          const headers = token ? { authorization: `Bearer ${token}` } : {};
+          const resp = await fetch(`/api/instructor/courses/modules/${encodeURIComponent(mod.id)}`, { method: 'DELETE', headers, credentials: 'include' });
+          if (!resp.ok) throw new Error('No se pudo eliminar');
           await loadModules(currentCourse);
         } catch (err) {
           showModal(err.message || 'Error al eliminar', { title: 'Error' });
@@ -325,4 +326,3 @@ export async function PergaminosPage() {
   wrap.appendChild(container);
   return wrap;
 }
-

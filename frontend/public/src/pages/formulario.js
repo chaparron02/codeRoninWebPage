@@ -1,85 +1,93 @@
-import { $, createEl, showModal, navigate, updateAuthNav, getJSON, setToken } from '../lib/core.js'
-import { Hero, Card, Courses, Services, Projects, PDFs, AchievementsSection, EmbedInstagram, EmbedTikTok } from '../lib/components.js'
+import { createEl, showModal } from '../lib/core.js'
+import { buildPageHero, buildSection } from '../lib/layouts.js'
 
 export async function FormPage() {
-  const main = createEl('main');
-  const sec = createEl('section', { className: 'section page' });
-  const c = createEl('div', { className: 'container' });
-  c.appendChild(createEl('h2', { className: 'section-title', text: 'Solicitud de informaci贸n' }));
-  c.appendChild(createEl('p', { text: 'D茅janos tus datos y el inter茅s del curso/capacitaci贸n. Te contactaremos para coordinar la mejor opci贸n.' }));
-  const qs = new URLSearchParams(location.search || '');
-  const interes = qs.get('interes') || '';
-  const categoria = qs.get('categoria') || '';
-  const modalidad = qs.get('modalidad') || '';
-  const form = createEl('form', { className: 'cr-form', attrs: { method: 'post', action: '/form/submit' } });
-  const row = (label, el) => { const r = createEl('div', { className: 'form-row' }); r.appendChild(createEl('label', { text: label })); r.appendChild(el); return r; };
-  const iNombre = createEl('input', { attrs: { type: 'text', name: 'nombre', required: 'true', placeholder: 'Nombre completo' } });
-  const iEmail = createEl('input', { attrs: { type: 'email', name: 'email', required: 'true', placeholder: 'correo@empresa.com' } });
-  const iEmpresa = createEl('input', { attrs: { type: 'text', name: 'empresa', placeholder: 'Empresa/Organizaci贸n' } });
-  // InterAs como lista desplegable (cursos presenciales)
-  const presCursos = [
-    'Introduccion y Metodolog铆a',
-    'Pentesting Web',
-    'Pentesting Infraestructura',
-    'Cybersecurity Fundamentals',
-    'Redes y Segmentacion',
-    'Amenazas y Riesgo',
-    'Taller OSINT',
-    'DFIR 101',
-    'DevSecOps Essentials',
-    'Concientizacion',
-    'Phishing simulado',
-    'Reporting y metricas'
-  ];
-  const presCursosFixed = [
-    'Introducci贸n y Metodolog铆a',
-    'Pentesting Web',
-    'Pentesting Infraestructura',
-    'Cybersecurity Fundamentals',
-    'Redes y Segmentaci贸n',
-    'Amenazas y Riesgo',
-    'Taller OSINT',
-    'DFIR 101',
-    'DevSecOps Essentials',
-    'Concientizaci贸n',
-    'Phishing simulado',
-    'Reportes y m茅tricas'
-  ];
-  const iInteres = createEl('select', { attrs: { name: 'interes', required: 'true' } });
-  presCursosFixed.forEach(n => {
-    const opt = createEl('option', { text: n, attrs: { value: n } });
-    iInteres.appendChild(opt);
-  });
-  if (interes && presCursosFixed.includes(interes)) iInteres.value = interes;
+  const main = createEl('main')
 
-  // Modalidad fija (no editable)
-  const iModalidad = createEl('input', { attrs: { type: 'text', name: 'modalidad', value: modalidad || 'presencial', readOnly: 'true' } });
-  const iMsg = createEl('textarea', { attrs: { name: 'mensaje', rows: '4', placeholder: 'Cu茅ntanos objetivos y disponibilidad' } });
-  const iSubmit = createEl('button', { className: 'btn btn-primary', text: 'Enviar solicitud', attrs: { type: 'submit' } });
+  const heroMedia = createEl('img', { attrs: { src: '/assets/material/dojo1.webp', alt: 'Cursos presenciales', loading: 'lazy' } })
+
+  main.appendChild(buildPageHero({
+    kicker: 'capacitaciones',
+    title: 'Solicita informacion de cursos presenciales',
+    description: 'Cu閚tanos el interes de tu equipo y coordinamos la mejor modalidad.',
+    stats: [
+      { label: 'Equipos entrenados', value: '60+' },
+      { label: 'Ciudades', value: '8' },
+      { label: 'Horas en sitio', value: '400+' },
+    ],
+    actions: [
+      { label: 'Ver agenda', href: '/dojo' },
+      { label: 'Contactar por WhatsApp', href: 'https://wa.me/573054402340', external: true },
+    ],
+    panelTitle: 'Que necesitamos',
+    panelList: [
+      'Objetivo del equipo y expectativa.',
+      'Cantidad de participantes y fechas tentativas.',
+      'Stack tecnologico o foco de la industria.',
+    ],
+    media: heroMedia,
+    variant: 'forms',
+  }))
+
+  const qs = new URLSearchParams(location.search || '')
+  const interes = qs.get('interes') || ''
+  const modalidad = qs.get('modalidad') || 'presencial'
+
+  const form = createEl('form', { className: 'cr-form', attrs: { autocomplete: 'off' } })
+  const row = (label, field) => {
+    const wrapper = createEl('div', { className: 'form-row' })
+    wrapper.append(createEl('label', { text: label }), field)
+    return wrapper
+  }
+
+  const iNombre = createEl('input', { attrs: { type: 'text', name: 'nombre', required: 'true', placeholder: 'Nombre completo' } })
+  const iEmail = createEl('input', { attrs: { type: 'email', name: 'email', required: 'true', placeholder: 'correo@empresa.com' } })
+  const iEmpresa = createEl('input', { attrs: { type: 'text', name: 'empresa', placeholder: 'Empresa/Organizacion' } })
+  const iInteres = createEl('input', { attrs: { type: 'text', name: 'interes', value: interes || '', placeholder: 'Curso o tema de interes' } })
+  const iModalidad = createEl('input', { attrs: { type: 'text', name: 'modalidad', value: modalidad, readOnly: 'true' } })
+  const iMsg = createEl('textarea', { attrs: { name: 'mensaje', rows: '4', placeholder: 'Cu閚tanos objetivos y disponibilidad' } })
+  const submit = createEl('button', { className: 'btn btn-primary', text: 'Enviar solicitud', attrs: { type: 'submit' } })
+
   form.append(
     row('Nombre', iNombre),
     row('Email', iEmail),
     row('Empresa', iEmpresa),
     row('Interes', iInteres),
     row('Modalidad', iModalidad),
-  row('Mensaje', iMsg),
-  createEl('div', { className: 'cta', children: [ iSubmit ] })
-  );
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    try {
-      const fd = new FormData(form);
-      const payload = Object.fromEntries(fd.entries());
-      const res = await fetch('/api/forms/course', { method: 'POST', headers: { 'content-type': 'application/json', 'accept': 'application/json' }, body: JSON.stringify(payload) });
-      if (!res.ok) { let msg = 'No se pudo iniciar sesion'; try { const ct = (res.headers.get('content-type') || '').toLowerCase(); const err = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text()); msg = err?.error || err?.message || msg; } catch {} throw new Error(msg); }
-      showModal('Tu solicitud fue enviada correctamente. Pronto nos comunicaremos contigo.', { title: 'Solicitud enviada', onClose: () => { try { form.reset(); } catch {} } });
-    } catch (err) {
-      showModal('Hubo un error al enviar la solicitud. Intenta de nuevo.', { title: 'Error' });
-    }
-  });
-  c.appendChild(form);
-  sec.appendChild(c);
-  main.appendChild(sec);
-  return main;
-}
+    row('Mensaje', iMsg),
+    createEl('div', { className: 'page-section-actions', children: [submit] })
+  )
 
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    try {
+      const fd = new FormData(form)
+      const payload = Object.fromEntries(fd.entries())
+      const res = await fetch('/api/forms/course', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('No se pudo enviar la solicitud')
+      showModal('Tu solicitud fue enviada correctamente. Pronto nos comunicaremos contigo.', {
+        title: 'Solicitud enviada',
+        onClose: () => { try { form.reset() } catch {} },
+      })
+    } catch (err) {
+      showModal('Hubo un error al enviar la solicitud. Intenta de nuevo.', { title: 'Error' })
+    }
+  })
+
+  main.appendChild(buildSection({
+    kicker: 'contacto',
+    title: 'Solicitud de informacion',
+    description: 'Llena el formulario y coordinamos agenda y presupuesto en menos de 24 horas.',
+    content: form,
+    actions: [
+      { label: 'Ver Dojo', href: '/dojo' },
+      { label: 'Ir a Misiones', href: '/misiones' },
+    ],
+  }))
+
+  return main
+}
