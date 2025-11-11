@@ -107,7 +107,13 @@ export async function AchievementsSection() {
 }
 
 export function EmbedInstagram(url = 'https://www.instagram.com/reel/CxLr7qHh3QK/embed') {
-  const wrap = createEl('div', { className: 'embed-item' });
+  const wrap = createEl('div', { className: 'embed-item social-card insta' });
+  const head = createEl('div', { className: 'social-card-head' });
+  head.append(
+    createEl('span', { className: 'social-dot insta' }),
+    createEl('span', { className: 'social-label', text: '@code_ronin' })
+  );
+  wrap.appendChild(head);
   const iframe = createEl('iframe', { attrs: { src: url, title: 'Instagram', loading: 'lazy', sandbox: 'allow-scripts allow-same-origin allow-popups', allow: 'encrypted-media; clipboard-write' } });
   wrap.appendChild(iframe);
   return wrap;
@@ -117,7 +123,13 @@ export function EmbedTikTok(id = '7267642037643296032') {
   const src = String(id).startsWith('@')
     ? `https://www.tiktok.com/embed/${id}`
     : `https://www.tiktok.com/embed/v2/video/${id}?lang=es-ES`;
-  const wrap = createEl('div', { className: 'embed-item' });
+  const wrap = createEl('div', { className: 'embed-item social-card tiktok' });
+  const head = createEl('div', { className: 'social-card-head' });
+  head.append(
+    createEl('span', { className: 'social-dot tiktok' }),
+    createEl('span', { className: 'social-label', text: '@code.ronin' })
+  );
+  wrap.appendChild(head);
   const iframe = createEl('iframe', { attrs: { src, title: 'TikTok', loading: 'lazy', sandbox: 'allow-scripts allow-same-origin allow-popups' } });
   wrap.appendChild(iframe);
   return wrap;

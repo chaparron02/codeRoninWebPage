@@ -1,5 +1,7 @@
 // entrypoint module that wires routes to per-page modules (ascii-only)
-import { setActiveNav, showLoader, hideLoader, updateAuthNav, navigate } from './lib/core.js'
+import { $, setActiveNav, showLoaderOnce, updateAuthNav, navigate } from './lib/core.js'
+import { mountHeader } from './components/header.js'
+import { mountFooter } from './components/footer.js'
 
 // Dynamic imports so each page loads in isolation.
 const routes = {
@@ -30,15 +32,16 @@ export async function render() {
   const route = parseRoute();
   setActiveNav(route);
   const root = document.getElementById('root');
-  if (!root) return;
-  showLoader();
-  root.setAttribute('aria-busy', 'true');
   root.innerHTML = '';
   try {
     const loader = routes[route] || routes['/'];
     const pageFn = await loader();
     const node = await pageFn();
     root.appendChild(node);
+    decorateSections();
+    const yearEl = document.getElementById('footer-year');
+    if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+    try { document.body.dataset.route = route.replace(/^\//,'') || 'home'; } catch {}
   } catch (err) {
     const fallback = document.createElement('div');
     fallback.className = 'container';
@@ -46,14 +49,26 @@ export async function render() {
     fallback.appendChild(document.createElement('p')).textContent = 'Intenta navegar a otra seccion mientras resolvemos el problema.';
     root.appendChild(fallback);
     try { console.error('Render error:', err); } catch {}
-  } finally {
-    hideLoader({ minimum: 480 });
-    root.removeAttribute('aria-busy');
   }
+}
+
+function decorateSections() {
+  document.querySelectorAll('.section.page').forEach(section => {
+    if (!section.classList.contains('page-section')) {
+      section.classList.add('page-section');
+    }
+    const container = section.querySelector(':scope > .container');
+    if (container && !container.classList.contains('page-section-shell')) {
+      container.classList.add('page-section-shell');
+    }
+  });
 }
 
 window.addEventListener('popstate', render);
 window.addEventListener('DOMContentLoaded', () => {
+  mountHeader();
+  mountFooter();
+  showLoaderOnce();
   render();
   updateAuthNav();
   document.addEventListener('click', (e) => {
@@ -71,4 +86,3 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 try { window.render = render; } catch {}
-

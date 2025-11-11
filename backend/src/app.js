@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
 import fs from 'fs';
@@ -13,7 +14,6 @@ import { router as userRouter } from './routes/user.js';
 import { router as instructorRouter } from './routes/instructor.js';
 import { router as adminRouter } from './routes/admin.js';
 import { router as reportsRouter } from './routes/reports.js';
-import { router as webhooksRouter } from './routes/webhooks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,10 +24,31 @@ const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
 export function createApp() {
   const app = express();
 
+  app.disable('x-powered-by');
+  app.use(helmet({
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'same-site' },
+    contentSecurityPolicy: false, // CSP already enforced at the frontend
+  }));
   app.use(cors());
-  app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use(morgan('dev'));
+
+  app.use((req, res, next) => {
+    const raw = req.originalUrl || req.url || '';
+    try {
+      const decoded = decodeURIComponent(raw);
+      if (decoded.includes('..')) {
+        if (req.path && req.path.startsWith('/api')) {
+          return res.status(400).json({ error: 'Invalid path' });
+        }
+        return res.status(400).send('Invalid path');
+      }
+    } catch {
+      return res.status(400).send('Invalid path encoding');
+    }
+    next();
+  });
 
   if (!fs.existsSync(MATERIAL_DIR)) {
     fs.mkdirSync(MATERIAL_DIR, { recursive: true });
@@ -42,7 +63,6 @@ export function createApp() {
   app.use('/api/reports', reportsRouter);
   app.use('/api/forms', formsApiRouter);
   app.use('/api', apiRouter);
-  app.use('/webhooks', webhooksRouter);
 
   // Web form fallbacks (non-API endpoints)
   app.use(formsWebRouter);
@@ -55,9 +75,22 @@ export function createApp() {
     res.status(404).end();
   });
 
+  const staticOptions = {
+    dotfiles: 'ignore',
+    index: false,
+    setHeaders(res, filePath) {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      if (path.extname(filePath).toLowerCase() === '.html') {
+        res.setHeader('Cache-Control', 'no-store');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=300');
+      }
+    }
+  };
+
   // Static assets
-  app.use('/material', express.static(MATERIAL_DIR));
-  app.use(express.static(FRONTEND_DIR));
+  app.use('/material', express.static(MATERIAL_DIR, staticOptions));
+  app.use(express.static(FRONTEND_DIR, staticOptions));
 
   app.use((req, res, next) => {
     if (!req.path.startsWith('/api')) {

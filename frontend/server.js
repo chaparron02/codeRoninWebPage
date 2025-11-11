@@ -29,6 +29,9 @@ const MIME = {
   '.mp4': 'video/mp4'
 };
 
+const BLOCKED_EXT = new Set(['.env','.config','.ini','.log','.lock','.pem','.key','.crt','.ps1','.sh']);
+const BLOCKED_SEGMENTS = ['/.git', '/package-lock.json', '/package.json', '/server.js'];
+
 function setSecurityHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
@@ -116,8 +119,22 @@ const server = http.createServer((req, res) => {
     return send(res, 405, 'Method Not Allowed');
   }
 
-  let urlPath = req.url.split('?')[0];
+  const rawUrl = req.url || '/';
+  if (/%2e%2e/i.test(rawUrl) || rawUrl.includes('..')) {
+    return send(res, 400, 'Bad Request');
+  }
+
+  let urlPath = rawUrl.split('?')[0];
   if (urlPath === '/') urlPath = '/index.html';
+
+  const lowered = urlPath.toLowerCase();
+  if (BLOCKED_SEGMENTS.some(seg => lowered.includes(seg))) {
+    return send(res, 403, 'Forbidden');
+  }
+  const extGuess = path.extname(urlPath).toLowerCase();
+  if (BLOCKED_EXT.has(extGuess)) {
+    return send(res, 403, 'Forbidden');
+  }
 
   const filePath = safeJoin(PUBLIC_DIR, urlPath);
   if (!filePath) return send(res, 400, 'Bad Request');

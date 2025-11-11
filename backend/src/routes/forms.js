@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { CourseInquiry, MissionInquiry } from '../models/inquiry.js';
 import { requireAdmin } from '../utils/auth.js';
-import { verifyJutsu } from '../utils/jutsu.js';
 
 export const formsApiRouter = Router();
 export const formsWebRouter = Router();
@@ -10,17 +9,6 @@ function pick(obj, keys) {
   const out = {};
   for (const k of keys) if (obj && Object.prototype.hasOwnProperty.call(obj, k)) out[k] = obj[k];
   return out;
-}
-
-async function ensureJutsu(req, res, context) {
-  const jutsu = (req.body && req.body.jutsu) || req.query?.jutsu;
-  const actor = req.user?.username || 'admin';
-  const ok = await verifyJutsu(jutsu, { context, actor });
-  if (!ok) {
-    res.status(401).json({ error: 'Jutsu invalido' });
-    return false;
-  }
-  return true;
 }
 
 // Helpers: serialize CSV
@@ -56,7 +44,6 @@ formsApiRouter.get('/course', requireAdmin, async (_req, res) => {
 
 formsApiRouter.delete('/course/:id', requireAdmin, async (req, res) => {
   try {
-    if (!(await ensureJutsu(req, res, 'Eliminar solicitud curso'))) return;
     const { id } = req.params;
     await CourseInquiry.deleteOne({ _id: id }).exec();
     res.status(204).end();
@@ -103,7 +90,6 @@ formsApiRouter.get('/mission', requireAdmin, async (_req, res) => {
 
 formsApiRouter.delete('/mission/:id', requireAdmin, async (req, res) => {
   try {
-    if (!(await ensureJutsu(req, res, 'Eliminar solicitud mision'))) return;
     const { id } = req.params;
     await MissionInquiry.deleteOne({ _id: id }).exec();
     res.status(204).end();
