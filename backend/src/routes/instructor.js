@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { requireRoles } from '../utils/auth.js';
-import { loadModules, saveModules, sanitizeResource, normalizeModule } from '../services/scrollsStore.js';
+import { loadModules, sanitizeResource, createModule, updateModule, removeModule } from '../services/scrollsStore.js';
 
 export const router = Router();
 
@@ -14,8 +14,9 @@ router.use(requireRoles(['gato','sensei']));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
-const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
-const SCROLLS_DIR = path.join(MATERIAL_DIR, 'pergaminos');
+const FRONTEND_DIR = path.join(ROOT_DIR, 'frontend', 'public');
+const PUBLIC_MATERIAL_DIR = path.join(FRONTEND_DIR, 'material');
+const SCROLLS_DIR = path.join(PUBLIC_MATERIAL_DIR, 'pergaminos');
 if (!fs.existsSync(SCROLLS_DIR)) fs.mkdirSync(SCROLLS_DIR, { recursive: true });
 
 const UPLOAD_TYPES = {
@@ -59,10 +60,13 @@ router.post('/upload/video', upload.single('file'), (req, res) => {
 
 router.get('/courses/modules', async (req, res) => {
   try {
-    const list = await loadModules();
-    const course = (req.query.course || '').toString();
-    const filtered = course ? list.filter(m => (m.course || '') === course) : list;
-    res.json(filtered);
+    const courseId = req.query.courseId ? String(req.query.courseId) : '';
+    const courseName = !courseId && req.query.course ? String(req.query.course) : '';
+    const list = await loadModules({
+      courseId: courseId || undefined,
+      courseName: courseName || undefined,
+    });
+    res.json(list);
   } catch (err) {
     res.status(500).json({ error: 'Cannot read modules' });
   }
@@ -70,69 +74,54 @@ router.get('/courses/modules', async (req, res) => {
 
 router.post('/courses/modules', async (req, res) => {
   try {
-    const { title, description = '', order = 0, course = '', resource: inputResource } = req.body || {};
+    const { title, description = '', order = 0, courseId: bodyCourseId, course, resource: inputResource } = req.body || {};
     const resource = sanitizeResource(inputResource ?? req.body);
     if (!title) return res.status(400).json({ error: 'title required' });
-    if (!course) return res.status(400).json({ error: 'course required' });
     if (resource.type !== 'link' && !resource.url) {
       return res.status(400).json({ error: 'Recurso invalido' });
     }
-    const now = new Date().toISOString();
-    const list = await loadModules();
-    const id = Math.random().toString(36).slice(2);
-    const item = {
-      id,
-      course,
+    const item = await createModule({
+      courseId: bodyCourseId || undefined,
+      courseName: course || undefined,
       title: String(title),
       description: String(description),
       order: Number(order) || 0,
       resource,
-      createdAt: now,
-      updatedAt: now,
-    };
-    list.push(item);
-    list.sort((a,b)=> (a.course||'').localeCompare(b.course||'') || (a.order||0)-(b.order||0) || (a.createdAt||'').localeCompare(b.createdAt||''));
-    await saveModules(list);
+    });
     res.status(201).json(item);
   } catch (err) {
-    res.status(500).json({ error: 'Cannot create module' });
+    res.status(500).json({ error: err.message || 'Cannot create module' });
   }
 });
 
 router.put('/courses/modules/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const list = await loadModules();
-    const idx = list.findIndex(x => x.id === id);
-    if (idx < 0) return res.status(404).json({ error: 'Not found' });
-    const item = list[idx];
-    const { title, description, order, course, resource: inputResource } = req.body || {};
-    if (title != null) item.title = String(title);
-    if (description != null) item.description = String(description);
-    if (order != null) item.order = Number(order)||0;
-    if (course != null) item.course = String(course);
+    const { title, description, order, courseId: bodyCourseId, course, resource: inputResource } = req.body || {};
+    const payload = {};
+    if (title != null) payload.title = title;
+    if (description != null) payload.description = description;
+    if (order != null) payload.order = order;
+    if (bodyCourseId != null) payload.courseId = bodyCourseId;
+    if (course != null) payload.courseName = course;
     if (inputResource != null) {
       const resource = sanitizeResource(inputResource ?? req.body);
       if (resource.type !== 'link' && !resource.url) return res.status(400).json({ error: 'Recurso invalido' });
-      item.resource = resource;
+      payload.resource = resource;
     }
-    item.updatedAt = new Date().toISOString();
-    list[idx] = item;
-    list.sort((a,b)=> (a.course||'').localeCompare(b.course||'') || (a.order||0)-(b.order||0) || (a.createdAt||'').localeCompare(b.createdAt||''));
-    await saveModules(list);
-    res.json(item);
+    const updated = await updateModule(id, payload);
+    if (!updated) return res.status(404).json({ error: 'Not found' });
+    res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: 'Cannot update module' });
+    res.status(500).json({ error: err.message || 'Cannot update module' });
   }
 });
 
 router.delete('/courses/modules/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const list = await loadModules();
-    const next = list.filter(x => x.id !== id);
-    if (next.length === list.length) return res.status(404).json({ error: 'Not found' });
-    await saveModules(next);
+    const deleted = await removeModule(id);
+    if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: 'Cannot delete module' });

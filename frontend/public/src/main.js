@@ -2,6 +2,7 @@
 import { $, setActiveNav, showLoaderOnce, updateAuthNav, navigate } from './lib/core.js'
 import { mountHeader } from './components/header.js'
 import { mountFooter } from './components/footer.js'
+import { initPageAnimations } from './lib/animations.js'
 
 // Dynamic imports so each page loads in isolation.
 const routes = {
@@ -11,6 +12,8 @@ const routes = {
   'armeria': async () => (await import('./pages/armeria.js')).ResourcesPage,
   'about': async () => (await import('./pages/about.js')).AboutPage,
   'login': async () => (await import('./pages/login.js')).LoginPage,
+  'crear-usuario': async () => (await import('./pages/create-user.js')).CreateUserPage,
+  'signup': async () => (await import('./pages/create-user.js')).CreateUserPage,
   'perfil': async () => (await import('./pages/perfil.js')).ProfilePage,
   'admin': async () => (await import('./pages/admin.js')).AdminPage,
   'pergaminos': async () => (await import('./pages/pergaminos.js')).PergaminosPage,
@@ -39,6 +42,7 @@ export async function render() {
     const node = await pageFn();
     root.appendChild(node);
     decorateSections();
+    initPageAnimations(node);
     const yearEl = document.getElementById('footer-year');
     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
     try { document.body.dataset.route = route.replace(/^\//,'') || 'home'; } catch {}

@@ -3,19 +3,20 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
+import { Op } from 'sequelize';
 import { requireAuth } from '../utils/auth.js';
 import { deriveRoles } from '../utils/roles.js';
-import { User } from '../models/user.js';
-import { Course } from '../models/course.js';
+import { models } from '../db/models/index.js';
 import { readJSON } from '../storage/fileStore.js';
 import { loadModules } from '../services/scrollsStore.js';
 import { getUserAccess } from '../services/accessStore.js';
+
+const { User, Course } = models;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
 const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
-const USER_COURSES_KEY = 'user_courses_access.json';
 
 export const router = Router();
 
@@ -36,8 +37,8 @@ function isStrongPassword(pw) {
 }
 
 async function ensureCoursesSeeded() {
-  let list = await Course.find({}).sort({ createdAt: 1 }).lean();
-  if (Array.isArray(list) && list.length) return list;
+  let list = await Course.findAll({ where: { isArchived: false }, order: [['createdAt', 'ASC']] });
+  if (list.length) return list.map((course) => course.toJSON());
   let fallback = await readJSON('courses.json', []);
   if (!Array.isArray(fallback) || !fallback.length) {
     try {
@@ -50,36 +51,40 @@ async function ensureCoursesSeeded() {
     } catch {}
   }
   if (Array.isArray(fallback) && fallback.length) {
-    try {
-      const docs = fallback.map(c => ({
-        title: c.title,
-        description: c.description || '',
-        image: c.image || '',
-        tags: Array.isArray(c.tags) ? c.tags : [],
-        modalidad: (c.modalidad || c.modality) || 'virtual',
-        price: c.price != null ? String(c.price) : undefined,
-        link: c.link || undefined,
-        category: c.category || undefined,
-      }));
-      if (docs.length) await Course.insertMany(docs);
-      list = await Course.find({}).sort({ createdAt: 1 }).lean();
-    } catch {}
+    const docs = fallback.map((c) => ({
+      title: c.title,
+      description: c.description || '',
+      image: c.image || '',
+      tags: Array.isArray(c.tags) ? c.tags : [],
+      modalidad: c.modalidad || c.modality || 'virtual',
+      price: c.price != null ? String(c.price) : null,
+      link: c.link || null,
+      category: c.category || null,
+    }));
+    if (docs.length) {
+      await Course.bulkCreate(
+        docs.map((course) => ({ ...course, isArchived: false, archivedAt: null })),
+        { ignoreDuplicates: true }
+      );
+    }
+    list = await Course.findAll({ where: { isArchived: false }, order: [['createdAt', 'ASC']] });
   }
-  return Array.isArray(list) ? list : [];
+  return list.map((course) => course.toJSON());
 }
 
 router.get('/profile', requireAuth, async (req, res) => {
   try {
-    const u = await User.findById(req.user.sub).lean();
+    const u = await User.findByPk(req.user.sub);
     if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
+    const plain = u.toJSON();
     res.json({
-      username: u.username,
-      name: u.name || u.displayName || '',
-      displayName: u.displayName || u.name || '',
-      email: u.email || '',
-      phone: u.phone || '',
-      roles: deriveRoles(u),
-      avatarUrl: u.avatarUrl || '',
+      username: plain.username,
+      name: plain.name || plain.displayName || '',
+      displayName: plain.displayName || plain.name || '',
+      email: plain.email || '',
+      phone: plain.phone || '',
+      roles: deriveRoles(plain),
+      avatarUrl: plain.avatarUrl || '',
     });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo obtener el perfil' });
@@ -89,10 +94,11 @@ router.get('/profile', requireAuth, async (req, res) => {
 router.put('/profile', requireAuth, async (req, res) => {
   try {
     const { name, email, phone } = req.body || {};
-    const u = await User.findById(req.user.sub).exec();
+    const u = await User.findByPk(req.user.sub);
     if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
     if (name && typeof name === 'string') {
-      u.name = name; u.displayName = name;
+      u.name = name;
+      u.displayName = name;
     }
     if (email != null) {
       if (!isValidEmail(email)) return res.status(400).json({ error: 'Correo invalido' });
@@ -117,7 +123,7 @@ router.post('/avatar', requireAuth, async (req, res) => {
     }
     const m = /^data:(image\/(png|jpe?g|webp));base64,(.+)$/.exec(dataUrl);
     if (!m) return res.status(400).json({ error: 'Formato no soportado' });
-    const ext = m[2] === 'jpeg' ? 'jpg' : (m[2] || 'png');
+    const ext = m[2] === 'jpeg' ? 'jpg' : m[2] || 'png';
     const buf = Buffer.from(m[3], 'base64');
     const userId = req.user.sub;
     const dir = path.join(MATERIAL_DIR, 'avatars');
@@ -125,7 +131,7 @@ router.post('/avatar', requireAuth, async (req, res) => {
     const file = path.join(dir, `${userId}.${ext}`);
     fs.writeFileSync(file, buf);
     const url = `/material/avatars/${userId}.${ext}`;
-    await User.updateOne({ _id: userId }, { $set: { avatarUrl: url } }).exec();
+    await User.update({ avatarUrl: url }, { where: { id: userId } });
     res.json({ ok: true, url });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo actualizar el avatar' });
@@ -134,19 +140,22 @@ router.post('/avatar', requireAuth, async (req, res) => {
 
 router.get('/courses', requireAuth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.sub).lean();
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
+    const plain = user.toJSON();
+    const roles = deriveRoles(plain);
     const canAccessAll = roles.includes('gato') || roles.includes('sensei');
     let courses = [];
     if (canAccessAll) {
       courses = await ensureCoursesSeeded();
     } else if (roles.includes('genin')) {
-      const { courses: allowed } = await getUserAccess(String(user._id));
+      const { courses: allowed } = await getUserAccess(String(user.id));
       if (allowed.length) {
-        courses = await Course.find({ _id: { $in: allowed } }).sort({ createdAt: 1 }).lean();
-      } else {
-        courses = [];
+        const rows = await Course.findAll({
+          where: { id: { [Op.in]: allowed } },
+          order: [['createdAt', 'ASC']],
+        });
+        courses = rows.map((row) => row.toJSON());
       }
     }
     res.json({ courses, roles });
@@ -159,22 +168,19 @@ router.get('/courses/:courseId/modules', requireAuth, async (req, res) => {
   try {
     const courseId = decodeURIComponent(req.params.courseId || '');
     if (!courseId) return res.status(400).json({ error: 'Curso requerido' });
-    const user = await User.findById(req.user.sub).lean();
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
+    const roles = deriveRoles(user.toJSON());
     const allowedRoles = ['gato', 'sensei', 'genin'];
-    if (!roles.some(r => allowedRoles.includes(r))) return res.status(403).json({ error: 'Sin permisos' });
+    if (!roles.some((r) => allowedRoles.includes(r))) return res.status(403).json({ error: 'Sin permisos' });
     if (roles.includes('genin')) {
-      const { courses: allowed } = await getUserAccess(String(user._id));
+      const { courses: allowed } = await getUserAccess(String(user.id));
       if (!allowed.includes(courseId)) {
         return res.status(403).json({ error: 'Curso no asignado' });
       }
     }
-    const modules = await loadModules();
-    const filtered = modules
-      .filter(m => (m.course || '') === courseId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt || '').localeCompare(b.createdAt || ''));
-    res.json(filtered);
+    const modules = await loadModules({ courseId });
+    res.json(modules);
   } catch (err) {
     res.status(500).json({ error: 'No se pudieron obtener modulos' });
   }
@@ -192,7 +198,7 @@ router.put('/password', requireAuth, async (req, res) => {
     if (!isStrongPassword(newPassword)) {
       return res.status(400).json({ error: 'La contrasena debe tener al menos 8 caracteres, una mayuscula y un simbolo' });
     }
-    const user = await User.findById(req.user.sub).exec();
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!matches) {

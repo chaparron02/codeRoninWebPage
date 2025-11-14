@@ -3,11 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
-import mongoose from 'mongoose';
+import { Op } from 'sequelize';
 import { requireAuth } from '../utils/auth.js';
 import { deriveRoles } from '../utils/roles.js';
-import { Report } from '../models/report.js';
-import { User } from '../models/user.js';
+import { models } from '../db/models/index.js';
+
+const { Report, User, ReportAttachment, ReportChatMessage, ReportChatAttachment } = models;
 
 export const router = Router();
 
@@ -33,18 +34,39 @@ function isShinobi(roles) {
   return Array.isArray(roles) && roles.includes('shinobi');
 }
 
+function isDaimyo(roles) {
+  return Array.isArray(roles) && roles.includes('daimyo');
+}
+
 async function findUserById(id) {
   if (!id) return null;
-  try {
-    const user = await User.findById(id).lean();
-    return user;
-  } catch {
-    return null;
-  }
+  return User.findByPk(id);
 }
 
 function safeFilename(original = 'file') {
   return String(original || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_');
+}
+
+function attachmentDownloadUrl(reportId, attachmentId) {
+  return `/api/reports/${encodeURIComponent(reportId)}/attachments/${encodeURIComponent(attachmentId)}/download`;
+}
+
+function chatAttachmentDownloadUrl(reportId, attachmentId) {
+  return `/api/reports/${encodeURIComponent(reportId)}/chat/${encodeURIComponent(attachmentId)}/download`;
+}
+
+async function ensureReportAccess(report, userId) {
+  if (!report || !userId) return null;
+  const user = await User.findByPk(userId);
+  if (!user) return null;
+  const roles = deriveRoles(user.toJSON());
+  const isAssigned = report.shogunId === user.id;
+  const isOwner = report.clientId === user.id;
+  const isSponsor = report.sponsorId === user.id;
+  if (isShogun(roles) || isAssigned || isOwner || isSponsor) {
+    return { user, roles };
+  }
+  return null;
 }
 
 const reportStorage = multer.diskStorage({
@@ -67,68 +89,100 @@ const uploadChatFile = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
-function serializeReport(doc, { includeChat = false, userLookup = null } = {}) {
-  if (!doc) return null;
+const baseReportInclude = [
+  { model: ReportAttachment, as: 'attachments' },
+  { model: User, as: 'client', attributes: ['id', 'username', 'name', 'displayName'] },
+  { model: User, as: 'shogun', attributes: ['id', 'username', 'name', 'displayName'] },
+  { model: User, as: 'sponsor', attributes: ['id', 'username', 'name', 'displayName'] },
+];
+
+const chatInclude = [
+  {
+    model: ReportChatMessage,
+    as: 'chat',
+    include: [
+      { model: User, as: 'author', attributes: ['id', 'username', 'name', 'displayName'] },
+      { model: ReportChatAttachment, as: 'attachments', include: [{ model: User, as: 'chatAttachmentUploader', attributes: ['id', 'username'] }] },
+    ],
+    order: [['createdAt', 'ASC']],
+  },
+];
+
+function serializeReport(report, { includeChat = false } = {}) {
+  if (!report) return null;
+  const plain = typeof report.toJSON === 'function' ? report.toJSON() : report;
   const base = {
-    id: String(doc._id),
-    title: doc.title,
-    summary: doc.summary || '',
-    clientId: doc.clientId ? String(doc.clientId) : null,
-    shogunId: doc.shogunId ? String(doc.shogunId) : null,
-    service: doc.service || '',
-    progress: doc.progress ?? 0,
-    status: doc.status || '',
-    tags: Array.isArray(doc.tags) ? doc.tags : [],
-    attachments: (doc.attachments || []).map((att) => ({
-      id: att._id ? String(att._id) : String(new mongoose.Types.ObjectId()),
+    id: plain.id,
+    title: plain.title,
+    summary: plain.summary || '',
+    clientId: plain.clientId,
+    shogunId: plain.shogunId,
+    sponsorId: plain.sponsorId,
+    service: plain.service || '',
+    progress: plain.progress ?? 0,
+    status: plain.status || '',
+    tags: plain.tags || [],
+    createdAt: plain.createdAt,
+    updatedAt: plain.updatedAt,
+    attachments: safeArray(plain.attachments).map((att) => ({
+      id: att.id,
       name: att.name,
-      url: att.url,
+      url: att.url || attachmentDownloadUrl(plain.id, att.id),
       mime: att.mime || '',
       size: att.size || 0,
-      uploadedBy: att.uploadedBy
+      uploadedBy: att.uploadedByUserId
         ? {
-            userId: att.uploadedBy.userId ? String(att.uploadedBy.userId) : null,
-            username: att.uploadedBy.username || '',
-            role: att.uploadedBy.role || '',
+            userId: att.uploadedByUserId,
+            username: att.uploadedByUsername || '',
+            role: att.uploadedByRole || '',
           }
         : null,
       createdAt: att.createdAt,
     })),
-    createdAt: doc.createdAt,
-    updatedAt: doc.updatedAt,
   };
-  if (userLookup) {
-    if (base.clientId && userLookup.has(base.clientId)) {
-      const user = userLookup.get(base.clientId);
-      base.client = { id: base.clientId, username: user.username || '', name: user.name || '' };
-    }
-    if (base.shogunId && userLookup.has(base.shogunId)) {
-      const user = userLookup.get(base.shogunId);
-      base.shogun = { id: base.shogunId, username: user.username || '', name: user.name || '' };
-    }
+  if (plain.client) {
+    base.client = {
+      id: plain.client.id,
+      username: plain.client.username,
+      name: plain.client.displayName || plain.client.name || '',
+    };
+  }
+  if (plain.shogun) {
+    base.shogun = {
+      id: plain.shogun.id,
+      username: plain.shogun.username,
+      name: plain.shogun.displayName || plain.shogun.name || '',
+    };
+  }
+  if (plain.sponsor) {
+    base.sponsor = {
+      id: plain.sponsor.id,
+      username: plain.sponsor.username,
+      name: plain.sponsor.displayName || plain.sponsor.name || '',
+    };
   }
   if (includeChat) {
-    base.chat = (doc.chat || []).map((msg) => ({
-      id: msg._id ? String(msg._id) : String(new mongoose.Types.ObjectId()),
-      user: msg.user
+    base.chat = safeArray(plain.chat).map((msg) => ({
+      id: msg.id,
+      user: msg.userId
         ? {
-            userId: msg.user.userId ? String(msg.user.userId) : null,
-            username: msg.user.username || '',
-            role: msg.user.role || '',
+            userId: msg.userId,
+            username: msg.username || msg.author?.username || '',
+            role: msg.role || '',
           }
         : null,
       message: msg.message || '',
-      attachments: (msg.attachments || []).map((att) => ({
-        id: att._id ? String(att._id) : String(new mongoose.Types.ObjectId()),
+      attachments: safeArray(msg.attachments).map((att) => ({
+        id: att.id,
         name: att.name,
-        url: att.url,
+        url: att.url || chatAttachmentDownloadUrl(plain.id, att.id),
         mime: att.mime || '',
         size: att.size || 0,
-        uploadedBy: att.uploadedBy
+        uploadedBy: att.uploadedByUserId
           ? {
-              userId: att.uploadedBy.userId ? String(att.uploadedBy.userId) : null,
-              username: att.uploadedBy.username || '',
-              role: att.uploadedBy.role || '',
+              userId: att.uploadedByUserId,
+              username: att.uploadedByUsername || att.chatAttachmentUploader?.username || '',
+              role: att.uploadedByRole || '',
             }
           : null,
         createdAt: att.createdAt,
@@ -139,28 +193,33 @@ function serializeReport(doc, { includeChat = false, userLookup = null } = {}) {
   return base;
 }
 
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 router.get('/', async (req, res) => {
   try {
-    const user = await User.findById(req.user.sub).lean();
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
-    const query = {};
+    const roles = deriveRoles(user.toJSON());
+    const where = {};
     if (isShogun(roles)) {
-      // Can see all; optionally filter by own id if desired.
-    } else if (isShinobi(roles)) {
-      query.clientId = user._id;
+      // full access
     } else {
-      return res.status(403).json({ error: 'Sin permisos' });
+      const clauses = [];
+      if (isShinobi(roles)) clauses.push({ clientId: user.id });
+      if (isDaimyo(roles)) clauses.push({ sponsorId: user.id });
+      if (!clauses.length) {
+        return res.status(403).json({ error: 'Sin permisos' });
+      }
+      Object.assign(where, clauses.length === 1 ? clauses[0] : { [Op.or]: clauses });
     }
-    const reports = await Report.find(query).sort({ updatedAt: -1 }).lean();
-    const ids = new Set();
-    reports.forEach(r => {
-      if (r.clientId) ids.add(String(r.clientId));
-      if (r.shogunId) ids.add(String(r.shogunId));
+    const reports = await Report.findAll({
+      where,
+      include: baseReportInclude,
+      order: [['updatedAt', 'DESC']],
     });
-    const users = ids.size ? await User.find({ _id: { $in: Array.from(ids) } }, { username: 1, name: 1 }).lean() : [];
-    const lookup = new Map(users.map(u => [String(u._id), u]));
-    res.json(reports.map((r) => serializeReport(r, { userLookup: lookup })));
+    res.json(reports.map((r) => serializeReport(r)));
   } catch (err) {
     res.status(500).json({ error: 'No se pudieron obtener reportes' });
   }
@@ -168,34 +227,43 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const user = await User.findById(req.user.sub).lean();
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
+    const roles = deriveRoles(user.toJSON());
     if (!isShogun(roles)) return res.status(403).json({ error: 'Solo shogun puede crear reportes' });
 
-    const { title, service, clientId, shogunId, summary = '', status = 'iniciando', tags = [] } = req.body || {};
+    const { title, service, clientId, shogunId, sponsorId, summary = '', status = 'iniciando', tags = [] } = req.body || {};
     if (!title || !service || !clientId) return res.status(400).json({ error: 'Titulo, servicio y cliente son requeridos' });
     const clientUser = await findUserById(clientId);
     if (!clientUser) return res.status(404).json({ error: 'Cliente no encontrado' });
-    const clientRoles = deriveRoles(clientUser);
+    const clientRoles = deriveRoles(clientUser.toJSON());
     if (!clientRoles.includes('shinobi')) return res.status(400).json({ error: 'El cliente debe tener rol shinobi' });
     const shogunUser = shogunId ? await findUserById(shogunId) : user;
     if (!shogunUser) return res.status(404).json({ error: 'Shogun no encontrado' });
-    const shogunRoles = deriveRoles(shogunUser);
+    const shogunRoles = deriveRoles(shogunUser.toJSON());
     if (!shogunRoles.includes('gato')) return res.status(400).json({ error: 'El shogun debe tener rol gato' });
+
+    let sponsor = null;
+    if (sponsorId) {
+      sponsor = await findUserById(sponsorId);
+      if (!sponsor) return res.status(404).json({ error: 'Daimyo no encontrado' });
+      const sponsorRoles = deriveRoles(sponsor.toJSON());
+      if (!sponsorRoles.includes('daimyo')) return res.status(400).json({ error: 'El daimyo debe tener rol valido' });
+    }
 
     const doc = await Report.create({
       title,
       summary,
       service,
-      clientId: clientUser._id,
-      shogunId: shogunUser._id,
+      clientId: clientUser.id,
+      shogunId: shogunUser.id,
+      sponsorId: sponsor ? sponsor.id : null,
       progress: 0,
       status: status || 'iniciando',
       tags: Array.isArray(tags) ? tags : [],
     });
-    const lookup = new Map([[String(clientUser._id), clientUser],[String(shogunUser._id), shogunUser]]);
-    res.status(201).json(serializeReport(doc, { userLookup: lookup }));
+    const lookupReport = await Report.findByPk(doc.id, { include: baseReportInclude });
+    res.status(201).json(serializeReport(lookupReport));
   } catch (err) {
     res.status(500).json({ error: 'No se pudo crear el reporte' });
   }
@@ -204,22 +272,18 @@ router.post('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const doc = await Report.findById(id).lean();
-    if (!doc) return res.status(404).json({ error: 'Reporte no encontrado' });
-    const user = await User.findById(req.user.sub).lean();
+    const report = await Report.findByPk(id, { include: [...baseReportInclude, ...chatInclude] });
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
-    const isOwner = doc.clientId && String(doc.clientId) === String(user._id);
-    const isAssigned = doc.shogunId && String(doc.shogunId) === String(user._id);
-    if (!(isShogun(roles) || isOwner || isAssigned)) {
+    const roles = deriveRoles(user.toJSON());
+    const isOwner = report.clientId === user.id;
+    const isAssigned = report.shogunId === user.id;
+    const isSponsor = report.sponsorId === user.id;
+    if (!(isShogun(roles) || isOwner || isAssigned || isSponsor)) {
       return res.status(403).json({ error: 'Sin permisos' });
     }
-    const ids = new Set();
-    if (doc.clientId) ids.add(String(doc.clientId));
-    if (doc.shogunId) ids.add(String(doc.shogunId));
-    const users = ids.size ? await User.find({ _id: { $in: Array.from(ids) } }, { username: 1, name: 1 }).lean() : [];
-    const lookup = new Map(users.map(u => [String(u._id), u]));
-    res.json(serializeReport(doc, { includeChat: true, userLookup: lookup }));
+    res.json(serializeReport(report, { includeChat: true }));
   } catch (err) {
     res.status(500).json({ error: 'No se pudo obtener el reporte' });
   }
@@ -229,24 +293,25 @@ router.put('/:id/progress', async (req, res) => {
   try {
     const { id } = req.params;
     const { progress, status } = req.body || {};
-    const doc = await Report.findById(id).exec();
-    if (!doc) return res.status(404).json({ error: 'Reporte no encontrado' });
-    const user = await User.findById(req.user.sub).lean();
+    const report = await Report.findByPk(id, { include: baseReportInclude });
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
-    const isAssigned = doc.shogunId && String(doc.shogunId) === String(user._id);
+    const roles = deriveRoles(user.toJSON());
+    const isAssigned = report.shogunId === user.id;
     if (!isShogun(roles) && !isAssigned) {
       return res.status(403).json({ error: 'Solo shogun puede actualizar progreso' });
     }
     if (progress != null) {
       const value = Math.min(Math.max(Number(progress) || 0, 0), 100);
-      doc.progress = value;
+      report.progress = value;
     }
     if (status != null) {
-      doc.status = String(status || '').trim().slice(0, 160) || doc.status;
+      report.status = String(status || '').trim().slice(0, 160) || report.status;
     }
-    await doc.save();
-    res.json(serializeReport(doc));
+    await report.save();
+    const fresh = await Report.findByPk(report.id, { include: baseReportInclude });
+    res.json(serializeReport(fresh));
   } catch (err) {
     res.status(500).json({ error: 'No se pudo actualizar el progreso' });
   }
@@ -255,31 +320,41 @@ router.put('/:id/progress', async (req, res) => {
 router.post('/:id/attachment', uploadReportFile.single('file'), async (req, res) => {
   try {
     const { id } = req.params;
-    const doc = await Report.findById(id).exec();
-    if (!doc) return res.status(404).json({ error: 'Reporte no encontrado' });
-    const user = await User.findById(req.user.sub).lean();
+    const report = await Report.findByPk(id);
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
-    const isAssigned = doc.shogunId && String(doc.shogunId) === String(user._id);
-    if (!isShogun(roles) && !isAssigned) {
+    const roles = deriveRoles(user.toJSON());
+    const isAssigned = report.shogunId === user.id;
+    const isOwner = report.clientId === user.id;
+    if (!(isShogun(roles) || isAssigned || isOwner)) {
       return res.status(403).json({ error: 'Sin permisos para subir informes' });
     }
     if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
-    const info = {
+    const storagePath = path.join(REPORT_FILES_DIR, req.file.filename);
+    const info = await ReportAttachment.create({
+      reportId: report.id,
       name: req.file.originalname || req.file.filename,
-      url: `/material/reports/files/${encodeURIComponent(req.file.filename)}`,
+      url: '',
+      storagePath,
       mime: req.file.mimetype || '',
       size: req.file.size || 0,
-      uploadedBy: {
-        userId: user._id,
-        username: user.username || '',
-        role: roles[0] || '',
-      },
-      createdAt: new Date(),
-    };
-    doc.attachments.push(info);
-    await doc.save();
-    res.status(201).json(info);
+      uploadedByUserId: user.id,
+      uploadedByUsername: user.username,
+      uploadedByRole: roles[0] || '',
+    });
+    const downloadUrl = attachmentDownloadUrl(report.id, info.id);
+    info.url = downloadUrl;
+    await info.save();
+    res.status(201).json({
+      id: info.id,
+      name: info.name,
+      url: downloadUrl,
+      mime: info.mime,
+      size: info.size,
+      uploadedBy: { userId: user.id, username: user.username, role: roles[0] || '' },
+      createdAt: info.createdAt,
+    });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo subir el archivo' });
   }
@@ -288,52 +363,113 @@ router.post('/:id/attachment', uploadReportFile.single('file'), async (req, res)
 router.post('/:id/chat', uploadChatFile.single('file'), async (req, res) => {
   try {
     const { id } = req.params;
-    const doc = await Report.findById(id).exec();
-    if (!doc) return res.status(404).json({ error: 'Reporte no encontrado' });
-    const user = await User.findById(req.user.sub).lean();
+    const report = await Report.findByPk(id);
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    const user = await User.findByPk(req.user.sub);
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const roles = deriveRoles(user);
-    const isAssigned = doc.shogunId && String(doc.shogunId) === String(user._id);
-    const isOwner = doc.clientId && String(doc.clientId) === String(user._id);
-    if (!(isShogun(roles) || isAssigned || isOwner)) {
+    const roles = deriveRoles(user.toJSON());
+    const isAssigned = report.shogunId === user.id;
+    const isOwner = report.clientId === user.id;
+    const isSponsor = report.sponsorId === user.id;
+    if (!(isShogun(roles) || isAssigned || isOwner || isSponsor)) {
       return res.status(403).json({ error: 'Sin permisos para participar en el reporte' });
     }
     const messageText = req.body?.message ? String(req.body.message).trim() : '';
     if (!messageText && !req.file) {
       return res.status(400).json({ error: 'Mensaje o archivo requerido' });
     }
-    const chatEntry = {
-      user: {
-        userId: user._id,
-        username: user.username || '',
-        role: roles[0] || '',
-      },
+    const chatEntry = await ReportChatMessage.create({
+      reportId: report.id,
+      userId: user.id,
+      username: user.username,
+      role: roles[0] || '',
       message: messageText,
-      attachments: [],
-      createdAt: new Date(),
-    };
+    });
     if (req.file) {
-      chatEntry.attachments.push({
+      const storagePath = path.join(CHAT_FILES_DIR, req.file.filename);
+      const chatFile = await ReportChatAttachment.create({
+        messageId: chatEntry.id,
         name: req.file.originalname || req.file.filename,
-        url: `/material/reports/chat/${encodeURIComponent(req.file.filename)}`,
+        url: '',
+        storagePath,
         mime: req.file.mimetype || '',
         size: req.file.size || 0,
-        uploadedBy: {
-          userId: user._id,
-          username: user.username || '',
-          role: roles[0] || '',
-        },
-        createdAt: new Date(),
+        uploadedByUserId: user.id,
+        uploadedByUsername: user.username,
+        uploadedByRole: roles[0] || '',
       });
+      chatFile.url = chatAttachmentDownloadUrl(report.id, chatFile.id);
+      await chatFile.save();
     }
-    doc.chat.push(chatEntry);
-    await doc.save();
-    const lastMessage = doc.chat[doc.chat.length - 1];
+    const freshMessage = await ReportChatMessage.findByPk(chatEntry.id, { include: chatInclude[0].include });
     res.status(201).json({
-      id: lastMessage._id ? String(lastMessage._id) : String(new mongoose.Types.ObjectId()),
-      ...chatEntry,
+      id: freshMessage.id,
+      user: { userId: user.id, username: user.username, role: roles[0] || '' },
+      message: freshMessage.message || '',
+      attachments: safeArray(freshMessage.attachments).map((att) => ({
+        id: att.id,
+        name: att.name,
+        url: att.url || chatAttachmentDownloadUrl(report.id, att.id),
+        mime: att.mime || '',
+        size: att.size || 0,
+        uploadedBy: { userId: user.id, username: user.username, role: roles[0] || '' },
+        createdAt: att.createdAt,
+      })),
+      createdAt: freshMessage.createdAt,
     });
   } catch (err) {
     res.status(500).json({ error: 'No se pudo guardar el mensaje' });
+  }
+});
+
+router.get('/:id/attachments/:attachmentId/download', async (req, res) => {
+  try {
+    const { id, attachmentId } = req.params;
+    const report = await Report.findByPk(id);
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    const attachment = await ReportAttachment.findByPk(attachmentId);
+    if (!attachment || attachment.reportId !== report.id) {
+      return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+    const access = await ensureReportAccess(report, req.user.sub);
+    if (!access) return res.status(403).json({ error: 'Sin permisos' });
+    const fallbackName = attachment.url ? path.basename(attachment.url) : '';
+    const filePath = attachment.storagePath || (fallbackName ? path.join(REPORT_FILES_DIR, fallbackName) : null);
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Archivo no disponible' });
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.name || 'archivo')}"`);
+    res.sendFile(path.resolve(filePath));
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo descargar el archivo' });
+  }
+});
+
+router.get('/:id/chat/:attachmentId/download', async (req, res) => {
+  try {
+    const { id, attachmentId } = req.params;
+    const report = await Report.findByPk(id);
+    if (!report) return res.status(404).json({ error: 'Reporte no encontrado' });
+    const attachment = await ReportChatAttachment.findByPk(attachmentId, {
+      include: [{ model: ReportChatMessage, attributes: ['reportId'] }],
+    });
+    if (!attachment || !attachment.messageId) {
+      return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+    const messageReportId = attachment.ReportChatMessage?.reportId;
+    if (!messageReportId || messageReportId !== report.id) {
+      return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+    const access = await ensureReportAccess(report, req.user.sub);
+    if (!access) return res.status(403).json({ error: 'Sin permisos' });
+    const fallbackName = attachment.url ? path.basename(attachment.url) : '';
+    const filePath = attachment.storagePath || (fallbackName ? path.join(CHAT_FILES_DIR, fallbackName) : null);
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Archivo no disponible' });
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.name || 'archivo')}"`);
+    res.sendFile(path.resolve(filePath));
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo descargar el archivo del chat' });
   }
 });

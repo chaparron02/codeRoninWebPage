@@ -7,14 +7,12 @@ import { seedInitialData } from './src/db/seed.js';
 
 dotenv.config();
 
-const PORT = Number(process.env.PORT || 8085);
-const DB_NAME = process.env.MONGODB_DB || 'coderonin';
-// Use host-only URI by default; db is provided via DB_NAME
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
+const PORT = Number(process.env.PORT || 3000);
+const DATABASE_URL = process.env.DATABASE_URL || 'file:./backend/data/coderonin.db';
 
 async function bootstrap() {
   try {
-    await connectDatabase({ uri: MONGODB_URI, dbName: DB_NAME });
+    await connectDatabase({ url: DATABASE_URL });
     await seedInitialData();
 
     const app = createApp();
@@ -23,8 +21,8 @@ async function bootstrap() {
     server.listen(PORT, () => {
       console.log(`codeRonin API ready on http://localhost:${PORT}`);
       const db = databaseState();
-      if (!db.ready || db.mode !== 'external') {
-        console.warn('Database is not ready or not external.');
+      if (!db.ready) {
+        console.warn('Database is not ready -- check DATABASE_URL.');
       }
     });
 

@@ -130,7 +130,7 @@ export async function EntrenamientoPage() {
   }
 
   async function openCourse(course) {
-    const courseKey = course.title || course.name || String(course._id || '');
+    const courseKey = course.id || course._id || course.title || course.name || '';
     slot.innerHTML = '';
     const header = createEl('div', { className: 'training-course-head' });
     const back = createEl('button', { className: 'btn btn-ghost btn-sm', text: 'Volver a cursos', attrs: { type: 'button' } });

@@ -9,7 +9,7 @@ export async function FormPage() {
   main.appendChild(buildPageHero({
     kicker: 'capacitaciones',
     title: 'Solicita informacion de cursos presenciales',
-    description: 'Cuéntanos el interes de tu equipo y coordinamos la mejor modalidad.',
+    description: 'CuÃ©ntanos el interes de tu equipo y coordinamos la mejor modalidad.',
     stats: [
       { label: 'Equipos entrenados', value: '60+' },
       { label: 'Ciudades', value: '8' },
@@ -45,7 +45,7 @@ export async function FormPage() {
   const iEmpresa = createEl('input', { attrs: { type: 'text', name: 'empresa', placeholder: 'Empresa/Organizacion' } })
   const iInteres = createEl('input', { attrs: { type: 'text', name: 'interes', value: interes || '', placeholder: 'Curso o tema de interes' } })
   const iModalidad = createEl('input', { attrs: { type: 'text', name: 'modalidad', value: modalidad, readOnly: 'true' } })
-  const iMsg = createEl('textarea', { attrs: { name: 'mensaje', rows: '4', placeholder: 'Cuéntanos objetivos y disponibilidad' } })
+  const iMsg = createEl('textarea', { attrs: { name: 'mensaje', rows: '4', placeholder: 'CuÃ©ntanos objetivos y disponibilidad' } })
   const submit = createEl('button', { className: 'btn btn-primary', text: 'Enviar solicitud', attrs: { type: 'submit' } })
 
   form.append(

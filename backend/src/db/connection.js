@@ -1,40 +1,59 @@
-import mongoose from 'mongoose';
-
-const TIMEOUT_MS = 3000;
+import { sequelize } from './models/index.js';
 
 const state = {
   ready: false,
-  mode: 'none',
-  uri: null,
-  dbName: null,
+  dialect: null,
+  storage: null,
 };
 
-export async function connectDatabase({ uri, dbName }) {
-  // Enfoque estricto: sin fallback a memoria. Si falla, se lanza error.
-  await mongoose.connect(uri, {
-    dbName,
-    serverSelectionTimeoutMS: TIMEOUT_MS,
-    connectTimeoutMS: TIMEOUT_MS,
-    socketTimeoutMS: TIMEOUT_MS,
-  });
+async function cleanupBackupTables() {
+  if (sequelize.getDialect() !== 'sqlite') return;
+  const qi = sequelize.getQueryInterface();
+  let tables = [];
+  try {
+    tables = await qi.showAllTables();
+  } catch (err) {
+    console.warn('No se pudieron listar tablas para limpiar backups', err?.message || err);
+    return;
+  }
+  const normalize = (entry) => {
+    if (typeof entry === 'string') return entry;
+    if (entry && typeof entry === 'object') {
+      return entry.tableName || entry.name || '';
+    }
+    return '';
+  };
+  const backupTables = tables
+    .map(normalize)
+    .filter((name) => typeof name === 'string' && name.endsWith('_backup'));
+  for (const table of backupTables) {
+    if (!table) continue;
+    try {
+      await qi.dropTable(table);
+    } catch (err) {
+      console.warn(`No se pudo eliminar la tabla temporal ${table}`, err?.message || err);
+    }
+  }
+}
+
+export async function connectDatabase() {
+  await sequelize.authenticate();
+  await cleanupBackupTables();
+  await sequelize.sync({ alter: true });
   state.ready = true;
-  state.mode = 'external';
-  state.uri = uri;
-  state.dbName = dbName;
-  return state;
+  state.dialect = sequelize.getDialect();
+  state.storage = sequelize.options.storage || process.env.DATABASE_URL || null;
+  return { ...state };
 }
 
 export async function disconnectDatabase() {
   try {
-    await mongoose.disconnect();
+    await sequelize.close();
   } finally {
     state.ready = false;
-    state.mode = 'none';
   }
 }
 
 export function databaseState() {
-  const ready = state.ready && mongoose.connection.readyState === 1;
-  return { ...state, ready, connectionState: mongoose.connection.readyState };
+  return { ...state };
 }
-
