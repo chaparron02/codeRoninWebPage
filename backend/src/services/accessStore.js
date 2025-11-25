@@ -1,41 +1,74 @@
-import { readJSON, writeJSON } from '../storage/fileStore.js';
+import { Op } from 'sequelize';
+import { models } from '../db/models/index.js';
 
-const KEY = 'user_courses_access.json';
+const { UserCourseAccess, UserServiceAccess } = models;
 
-async function loadRaw() {
-  const data = await readJSON(KEY, {});
-  if (data && typeof data === 'object' && !Array.isArray(data)) return data;
-  if (Array.isArray(data)) {
-    // Legacy array -> convert to empty map
-    return {};
-  }
-  return {};
+function normalizeIds(list) {
+  return Array.from(new Set((Array.isArray(list) ? list : []).map((value) => String(value || '')).filter(Boolean)));
 }
 
 export async function getAccessMap() {
-  return await loadRaw();
+  const [courseRows, serviceRows] = await Promise.all([
+    UserCourseAccess.findAll({ raw: true }),
+    UserServiceAccess.findAll({ raw: true }),
+  ]);
+  const map = {};
+  for (const row of courseRows) {
+    if (!map[row.userId]) map[row.userId] = { courses: [], services: [] };
+    map[row.userId].courses.push(row.courseId);
+  }
+  for (const row of serviceRows) {
+    if (!map[row.userId]) map[row.userId] = { courses: [], services: [] };
+    map[row.userId].services.push(row.serviceId);
+  }
+  return map;
 }
 
 export async function getUserAccess(userId) {
   if (!userId) return { courses: [], services: [] };
-  const map = await loadRaw();
-  const entry = map[userId];
-  if (!entry) return { courses: [], services: [] };
-  if (Array.isArray(entry)) {
-    // legacy: array of courses only
-    return { courses: entry.map(String), services: [] };
-  }
-  const courses = Array.isArray(entry.courses) ? entry.courses.map(String) : [];
-  const services = Array.isArray(entry.services) ? entry.services.map(String) : [];
-  return { courses, services };
+  const [courseRows, serviceRows] = await Promise.all([
+    UserCourseAccess.findAll({ where: { userId }, attributes: ['courseId'], raw: true }),
+    UserServiceAccess.findAll({ where: { userId }, attributes: ['serviceId'], raw: true }),
+  ]);
+  return {
+    courses: courseRows.map((row) => row.courseId),
+    services: serviceRows.map((row) => row.serviceId),
+  };
 }
 
 export async function setUserAccess(userId, { courses = [], services = [] } = {}) {
   if (!userId) throw new Error('userId required');
-  const map = await loadRaw();
-  const normCourses = Array.from(new Set((Array.isArray(courses) ? courses : []).map(String).filter(Boolean)));
-  const normServices = Array.from(new Set((Array.isArray(services) ? services : []).map(String).filter(Boolean)));
-  map[userId] = { courses: normCourses, services: normServices };
-  await writeJSON(KEY, map);
-  return map[userId];
+  const normCourses = normalizeIds(courses);
+  const normServices = normalizeIds(services);
+
+  await UserCourseAccess.destroy({
+    where: {
+      userId,
+      ...(normCourses.length ? { courseId: { [Op.notIn]: normCourses } } : {}),
+    },
+  });
+  await UserServiceAccess.destroy({
+    where: {
+      userId,
+      ...(normServices.length ? { serviceId: { [Op.notIn]: normServices } } : {}),
+    },
+  });
+
+  const existingCourses = await UserCourseAccess.findAll({ where: { userId }, attributes: ['courseId'], raw: true });
+  const existingCourseIds = new Set(existingCourses.map((row) => String(row.courseId)));
+  for (const courseId of normCourses) {
+    if (!existingCourseIds.has(courseId)) {
+      await UserCourseAccess.create({ userId, courseId });
+    }
+  }
+
+  const existingServices = await UserServiceAccess.findAll({ where: { userId }, attributes: ['serviceId'], raw: true });
+  const existingServiceIds = new Set(existingServices.map((row) => String(row.serviceId)));
+  for (const serviceId of normServices) {
+    if (!existingServiceIds.has(serviceId)) {
+      await UserServiceAccess.create({ userId, serviceId });
+    }
+  }
+
+  return { courses: normCourses, services: normServices };
 }

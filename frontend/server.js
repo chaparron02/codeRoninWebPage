@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const PORT = process.env.PORT || 5173;
 const LIVE = process.env.LIVERELOAD !== '0';
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8085';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

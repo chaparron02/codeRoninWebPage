@@ -1,6 +1,27 @@
 import { Router } from 'express';
-import { CourseInquiry, MissionInquiry } from '../models/inquiry.js';
+import { models } from '../db/models/index.js';
 import { requireAdmin } from '../utils/auth.js';
+
+const { CourseInquiry, MissionInquiry } = models;
+
+const FORM_LIMIT = 5;
+const FORM_WINDOW_MS = 30 * 60 * 1000;
+const formRateMap = new Map();
+
+function trackRequest(key) {
+  const now = Date.now();
+  const history = formRateMap.get(key) || [];
+  const recent = history.filter((ts) => now - ts < FORM_WINDOW_MS);
+  if (recent.length >= FORM_LIMIT) return false;
+  recent.push(now);
+  formRateMap.set(key, recent);
+  return true;
+}
+
+function clientKey(req, type) {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || '';
+  return `${type}:${ip || 'unknown'}`;
+}
 
 export const formsApiRouter = Router();
 export const formsWebRouter = Router();
@@ -27,25 +48,29 @@ function toCSV(rows, headers) {
 // API endpoints (JSON)
 formsApiRouter.post('/course', async (req, res) => {
   try {
+    const key = clientKey(req, 'course');
+    if (!trackRequest(key)) {
+      return res.status(429).json({ ok: false, error: 'Has enviado demasiadas solicitudes. Intenta en 30 minutos.' });
+    }
     const data = pick(req.body || {}, ['nombre','email','empresa','interes','modalidad','mensaje']);
     data.userAgent = req.headers['user-agent'] || '';
     data.ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
     const doc = await CourseInquiry.create(data);
-    res.status(201).json({ ok: true, id: doc._id });
+    res.status(201).json({ ok: true, id: doc.id });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }
 });
 
 formsApiRouter.get('/course', requireAdmin, async (_req, res) => {
-  const list = await CourseInquiry.find().sort({ createdAt: -1 }).lean();
+  const list = await CourseInquiry.findAll({ order: [['createdAt', 'DESC']], raw: true });
   res.json(list);
 });
 
 formsApiRouter.delete('/course/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    await CourseInquiry.deleteOne({ _id: id }).exec();
+    await CourseInquiry.destroy({ where: { id } });
     res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: 'No se pudo eliminar la solicitud' });
@@ -53,7 +78,7 @@ formsApiRouter.delete('/course/:id', requireAdmin, async (req, res) => {
 });
 
 formsApiRouter.get('/course.csv', requireAdmin, async (_req, res) => {
-  const list = await CourseInquiry.find().sort({ createdAt: -1 }).lean();
+  const list = await CourseInquiry.findAll({ order: [['createdAt', 'DESC']], raw: true });
   const headers = [
     { key: 'createdAt', label: 'createdAt' },
     { key: 'nombre', label: 'nombre' },
@@ -73,25 +98,29 @@ formsApiRouter.get('/course.csv', requireAdmin, async (_req, res) => {
 
 formsApiRouter.post('/mission', async (req, res) => {
   try {
+    const key = clientKey(req, 'mission');
+    if (!trackRequest(key)) {
+      return res.status(429).json({ ok: false, error: 'Has enviado demasiadas solicitudes. Intenta en 30 minutos.' });
+    }
     const data = pick(req.body || {}, ['nombre','email','empresa','categoria','interes','tipo','alcance','ventanas','restricciones','contacto']);
     data.userAgent = req.headers['user-agent'] || '';
     data.ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
     const doc = await MissionInquiry.create(data);
-    res.status(201).json({ ok: true, id: doc._id });
+    res.status(201).json({ ok: true, id: doc.id });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }
 });
 
 formsApiRouter.get('/mission', requireAdmin, async (_req, res) => {
-  const list = await MissionInquiry.find().sort({ createdAt: -1 }).lean();
+  const list = await MissionInquiry.findAll({ order: [['createdAt', 'DESC']], raw: true });
   res.json(list);
 });
 
 formsApiRouter.delete('/mission/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    await MissionInquiry.deleteOne({ _id: id }).exec();
+    await MissionInquiry.destroy({ where: { id } });
     res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: 'No se pudo eliminar la solicitud' });
@@ -99,7 +128,7 @@ formsApiRouter.delete('/mission/:id', requireAdmin, async (req, res) => {
 });
 
 formsApiRouter.get('/mission.csv', requireAdmin, async (_req, res) => {
-  const list = await MissionInquiry.find().sort({ createdAt: -1 }).lean();
+  const list = await MissionInquiry.findAll({ order: [['createdAt', 'DESC']], raw: true });
   const headers = [
     { key: 'createdAt', label: 'createdAt' },
     { key: 'nombre', label: 'nombre' },
@@ -134,6 +163,10 @@ formsWebRouter.use((req, _res, next) => {
 
 formsWebRouter.post('/form/submit', async (req, res) => {
   try {
+    const key = clientKey(req, 'course:web');
+    if (!trackRequest(key)) {
+      return res.status(429).send('<!doctype html><meta charset="utf-8"><title>Demasiadas solicitudes</title><p>Intenta nuevamente en unos minutos.</p>');
+    }
     const data = pick(req.body || {}, ['nombre','email','empresa','interes','modalidad','mensaje']);
     data.userAgent = req.headers['user-agent'] || '';
     data.ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
@@ -146,6 +179,10 @@ formsWebRouter.post('/form/submit', async (req, res) => {
 
 formsWebRouter.post('/mission/submit', async (req, res) => {
   try {
+    const key = clientKey(req, 'mission:web');
+    if (!trackRequest(key)) {
+      return res.status(429).send('<!doctype html><meta charset="utf-8"><title>Demasiadas solicitudes</title><p>Intenta nuevamente en unos minutos.</p>');
+    }
     const data = pick(req.body || {}, ['nombre','email','empresa','categoria','interes','tipo','alcance','ventanas','restricciones','contacto']);
     data.userAgent = req.headers['user-agent'] || '';
     data.ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';

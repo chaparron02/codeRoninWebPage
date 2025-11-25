@@ -61,6 +61,18 @@ export async function FormMisionPage() {
   const iRestricciones = createEl('textarea', { attrs: { name: 'restricciones', rows: '2', placeholder: 'Restricciones/consideraciones (sin DoS, horarios, etc.)' } })
   const iContacto = createEl('input', { attrs: { type: 'text', name: 'contacto', placeholder: 'Contacto tecnico/negocio' } })
   const submit = createEl('button', { className: 'btn btn-primary', text: 'Enviar solicitud de mision', attrs: { type: 'submit' } })
+  const ejemplosBtn = createEl('button', { className: 'btn btn-ghost', text: 'Ver ejemplos de reporte', attrs: { type: 'button' } })
+  ejemplosBtn.addEventListener('click', () => {
+    const ejemplos = [
+      '• Red Team retail: 9 hallazgos críticos, video PoV y plan de remediación en 30 días.',
+      '• DFIR financiero: línea de tiempo, cadena de custodia y kit de comunicación para dirección.',
+      '• Ing. social corporativa: métricas de clic, cápsulas multimedia y plan de refuerzo.'
+    ].join('\n')
+    showModal(ejemplos, { title: 'Ejemplos de reporte' })
+  })
+
+  const actionsRow = createEl('div', { className: 'page-section-actions' })
+  actionsRow.append(submit, ejemplosBtn)
 
   form.append(
     row('Nombre', iNombre),
@@ -73,7 +85,7 @@ export async function FormMisionPage() {
     row('Ventanas', iVentanas),
     row('Restricciones', iRestricciones),
     row('Contacto', iContacto),
-    createEl('div', { className: 'page-section-actions', children: [submit] })
+    actionsRow
   )
 
   form.addEventListener('submit', async (e) => {
@@ -102,8 +114,7 @@ export async function FormMisionPage() {
     description: 'Mientras mas contexto tengamos, mejor podremos ajustar alcance y tiempos.',
     content: form,
     actions: [
-      { label: 'Revisar politicas', href: '/politicas' },
-      { label: 'Ver ejemplos de reporte', href: '/reporte' },
+      { label: 'Revisar politicas', href: '/politicas' }
     ],
   }))
 

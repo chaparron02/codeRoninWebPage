@@ -52,6 +52,12 @@ out/
 *.key
 *.crt
 frontend/CON
+frontend/public_backup_*/
+frontend/public_replaced_*/
+tmp_check*.cjs
+tmp_check*.js
+tmp_patch_test.*
+*.mergeview.tmp
 
 ### Local JSON data store
 backend/src/memory/*

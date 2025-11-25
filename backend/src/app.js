@@ -14,12 +14,15 @@ import { router as userRouter } from './routes/user.js';
 import { router as instructorRouter } from './routes/instructor.js';
 import { router as adminRouter } from './routes/admin.js';
 import { router as reportsRouter } from './routes/reports.js';
+import { extractToken, verifyToken } from './utils/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const FRONTEND_DIR = path.join(ROOT_DIR, 'frontend', 'public');
-const MATERIAL_DIR = path.join(ROOT_DIR, 'material');
+const STORAGE_DIR = path.join(ROOT_DIR, 'backend', 'storage');
+const MATERIAL_DIR = path.join(STORAGE_DIR, 'material');
+const PUBLIC_MATERIAL_DIR = path.join(FRONTEND_DIR, 'material');
 
 export function createApp() {
   const app = express();
@@ -50,8 +53,14 @@ export function createApp() {
     next();
   });
 
+  if (!fs.existsSync(STORAGE_DIR)) {
+    fs.mkdirSync(STORAGE_DIR, { recursive: true });
+  }
   if (!fs.existsSync(MATERIAL_DIR)) {
     fs.mkdirSync(MATERIAL_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(PUBLIC_MATERIAL_DIR)) {
+    fs.mkdirSync(PUBLIC_MATERIAL_DIR, { recursive: true });
   }
 
   // API first, so static files under /frontend/public/api no shadow backend endpoints
@@ -69,7 +78,7 @@ export function createApp() {
 
   // Direct SPA routes -> serve index.html (no hash routing)
   const indexPath = path.join(FRONTEND_DIR, 'index.html');
-  const spaRoutes = ['/','/login','/signup','/admin','/dojo','/misiones','/armeria','/about','/formulario','/form-mision','/perfil','/profile','/pergaminos','/entrenamientos','/reporte','/politicas','/recursos','/servicios','/cursos','/projects','/contact'];
+  const spaRoutes = ['/','/login','/crear-usuario','/signup','/admin','/dojo','/misiones','/armeria','/about','/formulario','/form-mision','/perfil','/profile','/pergaminos','/entrenamientos','/reporte','/politicas','/recursos','/servicios','/cursos','/projects','/contact'];
   app.get(spaRoutes, (_req, res) => {
     if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
     res.status(404).end();
@@ -87,6 +96,30 @@ export function createApp() {
       }
     }
   };
+
+  function protectedStatic(dir, allowedRoles) {
+    const serve = express.static(dir, staticOptions);
+    return (req, res, next) => {
+      try {
+        const token = extractToken(req);
+        if (!token) return res.status(401).send('No autorizado');
+        const payload = verifyToken(token);
+        const roles = Array.isArray(payload.roles) ? payload.roles : [];
+        if (!allowedRoles.some((role) => roles.includes(role))) {
+          return res.status(403).send('Acceso restringido');
+        }
+      } catch {
+        return res.status(401).send('Sesion invalida');
+      }
+      return serve(req, res, next);
+    };
+  }
+
+  // Protected media
+  app.use('/material/videos', protectedStatic(path.join(PUBLIC_MATERIAL_DIR, 'videos'), ['gato','sensei']));
+  app.use('/material/pergaminos', protectedStatic(path.join(PUBLIC_MATERIAL_DIR, 'pergaminos'), ['gato','sensei']));
+  app.use('/material/images', protectedStatic(path.join(PUBLIC_MATERIAL_DIR, 'images'), ['gato','sensei']));
+  app.use('/material/missions', protectedStatic(path.join(PUBLIC_MATERIAL_DIR, 'missions'), ['gato']));
 
   // Static assets
   app.use('/material', express.static(MATERIAL_DIR, staticOptions));

@@ -70,8 +70,11 @@ export async function PergaminosPage() {
   courseSelect.appendChild(new Option('Selecciona un curso', '', true, true));
   courses.forEach(course => {
     const title = course.title || course.name || '';
-    if (!title) return;
-    courseSelect.appendChild(new Option(title, title));
+    const value = course.id || course._id || title;
+    if (!title || !value) return;
+    const option = new Option(title, value);
+    option.dataset.slug = title;
+    courseSelect.appendChild(option);
   });
   listHeader.append(courseLabel, courseSelect);
   listCard.appendChild(listHeader);
@@ -165,10 +168,11 @@ export async function PergaminosPage() {
     if (state.mode !== 'external-video') urlInput.value = '';
   }
 
-  async function loadModules(course) {
+  async function loadModules(courseId) {
     modulesContainer.innerHTML = '';
     modulesContainer.appendChild(info('Cargando pergaminos...'));
-    const list = await getJSON(`/api/instructor/courses/modules?course=${encodeURIComponent(course)}`, []);
+    const qs = courseId ? `?courseId=${encodeURIComponent(courseId)}` : '';
+    const list = await getJSON(`/api/instructor/courses/modules${qs}`, []);
     modulesCache = Array.isArray(list) ? list : [];
     renderModules();
   }
@@ -268,7 +272,7 @@ export async function PergaminosPage() {
       }
 
       const payload = {
-        course: currentCourse,
+        courseId: currentCourse,
         title,
         description: inputDesc.value.trim(),
         order: Number(inputOrder.value) || 0,

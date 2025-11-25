@@ -1,16 +1,28 @@
 const headerTemplate = /* html */ `
 <header class="cr-header" id="site-header">
+  <div class="cr-header-glow" aria-hidden="true"></div>
   <div class="header-frame">
-    <a class="brand-chip" href="/" aria-label="Ir al inicio">
-      <img src="/assets/material/logo.webp" alt="codeRonin" class="logo" />
-      <div class="brand-names">
-        <span class="brand-text glitch" data-text="codeRonin">codeRonin</span>
-        <span class="brand-sub">dojo ofensivo</span>
+    <div class="brand-cluster">
+      <a class="brand-chip" href="/" aria-label="Ir al inicio">
+        <img src="/assets/material/logo.webp" alt="codeRonin" class="logo" />
+        <div class="brand-names">
+          <span class="brand-text glitch" data-text="codeRonin">codeRonin</span>
+          <span class="brand-sub">dojo ofensivo</span>
+        </div>
+      </a>
+      <div class="header-signal">
+        <div class="header-status-pill">
+          <span class="status-led" aria-hidden="true"></span>
+          <span class="status-copy">canal seguro activo</span>
+        </div>
+        <div class="header-telemetry">
+          <span class="telemetry-dot" aria-hidden="true"></span>
+          <div class="telemetry-text">
+            <span class="telemetry-label">latencia 42ms</span>
+            <span class="telemetry-value">uptime 99.9%</span>
+          </div>
+        </div>
       </div>
-    </a>
-    <div class="header-status-pill">
-      <span class="status-led" aria-hidden="true"></span>
-      <span class="status-copy">canal seguro activo</span>
     </div>
     <div class="header-controls">
       <a class="btn btn-primary primary-cta" href="/form-mision">Solicitar mision</a>
@@ -28,36 +40,38 @@ const headerTemplate = /* html */ `
       </button>
     </div>
   </div>
-  <nav class="header-nav" id="nav-links" aria-label="Navegacion principal">
-    <a href="/" class="active">
-      <span class="nav-label">Inicio</span>
-      <span class="nav-desc">Briefing general</span>
-    </a>
-    <a href="/dojo">
-      <span class="nav-label">Dojo</span>
-      <span class="nav-desc">Labs y cursos</span>
-    </a>
-    <a href="/misiones">
-      <span class="nav-label">Misiones</span>
-      <span class="nav-desc">Operaciones activas</span>
-    </a>
-    <a href="/perfil" data-id="nav-profile">
-      <span class="nav-label">Perfil</span>
-      <span class="nav-desc">Tu dojo personal</span>
-    </a>
-    <a href="/armeria">
-      <span class="nav-label">Armeria</span>
-      <span class="nav-desc">Herramientas &amp; kits</span>
-    </a>
-    <a href="/about">
-      <span class="nav-label">Nosotros</span>
-      <span class="nav-desc">Equipo y doctrina</span>
-    </a>
-    <a href="/politicas" data-id="nav-policy">
-      <span class="nav-label">Politicas</span>
-      <span class="nav-desc">Protocolos legales</span>
-    </a>
-  </nav>
+  <div class="header-nav-shell">
+    <nav class="header-nav" id="nav-links" aria-label="Navegacion principal">
+      <a href="/" class="active">
+        <span class="nav-label">Inicio</span>
+        <span class="nav-desc">Briefing general</span>
+      </a>
+      <a href="/dojo">
+        <span class="nav-label">Dojo</span>
+        <span class="nav-desc">Labs y cursos</span>
+      </a>
+      <a href="/misiones">
+        <span class="nav-label">Misiones</span>
+        <span class="nav-desc">Operaciones activas</span>
+      </a>
+      <a href="/perfil" data-id="nav-profile">
+        <span class="nav-label">Perfil</span>
+        <span class="nav-desc">Tu dojo personal</span>
+      </a>
+      <a href="/armeria">
+        <span class="nav-label">Armeria</span>
+        <span class="nav-desc">Herramientas &amp; kits</span>
+      </a>
+      <a href="/about">
+        <span class="nav-label">Nosotros</span>
+        <span class="nav-desc">Equipo y doctrina</span>
+      </a>
+      <a href="/politicas" data-id="nav-policy">
+        <span class="nav-label">Politicas</span>
+        <span class="nav-desc">Protocolos legales</span>
+      </a>
+    </nav>
+  </div>
   <div class="header-locator" aria-label="Estado del header">
     <div class="locator-status">
       <span class="status-led" aria-hidden="true"></span>
@@ -189,3 +203,4 @@ export function mountHeader() {
   cleanupHeader = bindHeaderInteractions(header);
   return header;
 }
+

@@ -1,20 +1,62 @@
 import bcrypt from 'bcryptjs';
-import { User } from '../models/user.js';
+import { models } from './models/index.js';
+
+const { User } = models;
 
 export async function seedInitialData() {
-  const adminU = 'admin';
-  const adminPass = 'Admin123.';
-  const existing = await User.findOne({ username: adminU }).exec();
-  const hash = await bcrypt.hash(adminPass, 10);
+  await ensureUser({
+    username: 'admin',
+    password: 'Admin1.',
+    role: 'admin',
+    roles: ['gato'],
+    displayName: 'Administrador',
+    name: 'Administrador',
+    email: 'coderonin404@gmail.com',
+  });
+
+  await ensureUser({
+    username: 'gato',
+    password: 'Gato1.',
+    role: 'user',
+    roles: ['genin'],
+    displayName: 'Gato',
+    name: 'Usuario Gato',
+    email: 'gato@example.com',
+  });
+
+  await ensureUser({
+    username: 'daimyo',
+    password: 'Daimyo1.',
+    role: 'user',
+    roles: ['daimyo'],
+    displayName: 'Daimyo',
+    name: 'Cliente Daimyo',
+    email: 'daimyo@example.com',
+  });
+}
+
+async function ensureUser({ username, password, role, roles, displayName, name, email }) {
+  const existing = await User.findOne({ where: { username } });
+  const hash = await bcrypt.hash(password, 12);
   if (!existing) {
-    await User.create({ username: adminU, passwordHash: hash, role: 'admin', roles: ['gato'], displayName: 'Administrador', name: 'Administrador', email: '', phone: '' });
-  } else {
-    existing.passwordHash = hash;
-    if (existing.role !== 'admin') existing.role = 'admin';
-    if (!Array.isArray(existing.roles) || !existing.roles.includes('gato')) {
-      existing.roles = Array.isArray(existing.roles) ? Array.from(new Set([...existing.roles, 'gato'])) : ['gato'];
-    }
-    if (!existing.displayName) existing.displayName = 'Administrador';
-    await existing.save();
+    await User.create({
+      username,
+      passwordHash: hash,
+      role,
+      roles,
+      displayName,
+      name,
+      email,
+      phone: '',
+      active: true,
+    });
+    return;
   }
+  existing.passwordHash = hash;
+  existing.role = role;
+  existing.roles = roles;
+  existing.displayName = displayName;
+  existing.name = name;
+  if (email) existing.email = email;
+  await existing.save();
 }
