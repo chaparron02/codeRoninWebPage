@@ -1,4 +1,4 @@
-import { createEl, showModal, updateAuthNav, getJSON } from '../lib/core.js'
+import { apiFetch, createEl, showModal, updateAuthNav, getJSON } from '../lib/core.js'
 
 export async function ProfilePage() {
   const wrap = createEl('section', { className: 'section page profile-page', attrs: { id: 'perfil' } });
@@ -94,11 +94,10 @@ export async function ProfilePage() {
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const res = await fetch('/api/user/avatar', {
+        const res = await apiFetch('/api/user/avatar', {
           method: 'POST',
           headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ dataUrl: reader.result })
+                    body: JSON.stringify({ dataUrl: reader.result })
         });
         if (!res.ok) {
           let msg = 'No se pudo actualizar el avatar';
@@ -235,11 +234,10 @@ export async function ProfilePage() {
     e.preventDefault();
     save.disabled = true;
     try {
-      const res = await fetch('/api/user/profile', {
+      const res = await apiFetch('/api/user/profile', {
         method: 'PUT',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ name: iName.value, email: iEmail.value, phone: iPhone.value })
+                body: JSON.stringify({ name: iName.value, email: iEmail.value, phone: iPhone.value })
       });
       if (!res.ok) {
         let msg = 'No se pudo actualizar el perfil';
@@ -340,11 +338,10 @@ export async function ProfilePage() {
 
     secButton.disabled = true;
     try {
-      const res = await fetch('/api/user/password', {
+      const res = await apiFetch('/api/user/password', {
         method: 'PUT',
         headers: { 'content-type': 'application/json', 'accept': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ currentPassword: current, newPassword: next, confirmPassword: confirm })
+                body: JSON.stringify({ currentPassword: current, newPassword: next, confirmPassword: confirm })
       });
       if (!res.ok) {
         let msg = 'No se pudo actualizar la contrase\u00f1a';

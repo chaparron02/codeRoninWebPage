@@ -1,4 +1,4 @@
-import { createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken } from '../lib/core.js';
+import { apiFetch, createEl, showModal, navigate, updateAuthNav, getJSON, setToken, getToken } from '../lib/core.js';
 
 const DELETE_SECRET = 'gatito';
 const ROLE_ORDER = ['genin','daimyo','shinobi','sensei','gato'];
@@ -40,7 +40,7 @@ function csvButton(label, url, filename) {
   btn.addEventListener('click', async () => {
     try {
       const token = getToken();
-      const res = await fetch(url, { headers: token ? { authorization: `Bearer ${token}` } : {}, credentials: 'include' });
+      const res = await apiFetch(url, { headers: token ? { authorization: `Bearer ${token}` } : {}, credentials: 'include' });
       if (!res.ok) throw new Error('No se pudo descargar');
       const blob = await res.blob();
       const anchor = document.createElement('a');
@@ -94,7 +94,7 @@ export async function AdminPage() {
   if (me.email) badgeRow.appendChild(createEl('span', { className: 'badge muted', text: me.email }));
   const logout = createEl('button', { className: 'btn btn-ghost', text: 'Salir' });
   logout.addEventListener('click', async () => {
-    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
+    try { await apiFetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
     setToken('');
     navigate('/admin');
   });
@@ -297,7 +297,7 @@ export async function AdminPage() {
             const endpoint = state.active === 'course'
               ? `/api/forms/course/${encodeURIComponent(itemId)}`
               : `/api/forms/mission/${encodeURIComponent(itemId)}`;
-            const res = await fetch(endpoint, { method: 'DELETE', headers: token ? { authorization: `Bearer ${token}` } : {}, credentials: 'include' });
+            const res = await apiFetch(endpoint, { method: 'DELETE', headers: token ? { authorization: `Bearer ${token}` } : {}, credentials: 'include' });
             if (!res.ok) throw new Error();
             state.data[state.active] = current.filter(entry => (entry.id || entry._id) !== itemId);
             render();
@@ -386,7 +386,7 @@ export async function AdminPage() {
           sponsorId: sponsorSelect.value || '',
         };
         if (!payload.title || !payload.service || !payload.shinobiId) throw new Error('Completa los campos requeridos');
-        const res = await fetch('/api/admin/missions', {
+        const res = await apiFetch('/api/admin/missions', {
           method: 'POST',
           headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify(payload),
@@ -467,7 +467,7 @@ export async function AdminPage() {
               shogunId: shogunSel.value || '',
               sponsorId: sponsorSel.value || '',
             };
-            const res = await fetch(`/api/admin/missions/${encodeURIComponent(item.id)}`, {
+            const res = await apiFetch(`/api/admin/missions/${encodeURIComponent(item.id)}`, {
               method: 'PUT',
               headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
               body: JSON.stringify(payload),
@@ -486,7 +486,7 @@ export async function AdminPage() {
         remove.addEventListener('click', async () => {
           if (!requireSecret()) return;
           try {
-            const res = await fetch(`/api/admin/missions/${encodeURIComponent(item.id)}`, {
+            const res = await apiFetch(`/api/admin/missions/${encodeURIComponent(item.id)}`, {
               method: 'DELETE',
               headers: token ? { authorization: `Bearer ${token}` } : {},
             });
@@ -575,7 +575,7 @@ export async function AdminPage() {
             shinobiId: shinobiSel.value || '',
             sponsorId: daimyoSel.value || '',
           };
-          const res = await fetch(`/api/admin/missions/${encodeURIComponent(mission.id)}`, {
+          const res = await apiFetch(`/api/admin/missions/${encodeURIComponent(mission.id)}`, {
             method: 'PUT',
             headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
             body: JSON.stringify(payload),
@@ -731,7 +731,7 @@ export async function AdminPage() {
         const headers = { 'content-type': 'application/json' };
         if (token) headers.authorization = `Bearer ${token}`;
         if (editingId) {
-        const res = await fetch(`/api/admin/courses/${encodeURIComponent(editingId)}`, {
+        const res = await apiFetch(`/api/admin/courses/${encodeURIComponent(editingId)}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify(payload),
@@ -740,7 +740,7 @@ export async function AdminPage() {
           if (!res.ok) throw new Error('No se pudo actualizar el curso');
           showModal('Curso actualizado', { title: 'Listo' });
         } else {
-        const res = await fetch('/api/admin/courses', {
+        const res = await apiFetch('/api/admin/courses', {
           method: 'POST',
           headers,
           body: JSON.stringify(payload),
@@ -777,7 +777,7 @@ export async function AdminPage() {
       try {
         const headers = { 'content-type': 'application/json' };
         if (token) headers.authorization = `Bearer ${token}`;
-        const res = await fetch(`/api/admin/courses/${encodeURIComponent(course.id)}`, {
+        const res = await apiFetch(`/api/admin/courses/${encodeURIComponent(course.id)}`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ isArchived: !course.isArchived }),
@@ -795,7 +795,7 @@ export async function AdminPage() {
       if (!window.confirm(`Eliminar el curso ${course.title}? Esta accion es irreversible.`)) return;
       try {
         const headers = token ? { authorization: `Bearer ${token}` } : {};
-        const res = await fetch(`/api/admin/courses/${encodeURIComponent(course.id)}`, {
+        const res = await apiFetch(`/api/admin/courses/${encodeURIComponent(course.id)}`, {
           method: 'DELETE',
           headers,
           credentials: 'include',
@@ -881,7 +881,7 @@ export async function AdminPage() {
         const body = new FormData();
         body.append('file', fileInput.files[0]);
         const headers = token ? { authorization: `Bearer ${token}` } : {};
-        const res = await fetch('/api/admin/upload/pdf', { method: 'POST', headers, body });
+        const res = await apiFetch('/api/admin/upload/pdf', { method: 'POST', headers, body });
         if (!res.ok) throw new Error('No se pudo subir el PDF');
         fileInput.value = '';
         await loadList();
@@ -973,7 +973,7 @@ export async function AdminPage() {
           isPublished: publishInput.checked,
         };
         if (!payload.title) throw new Error('El titulo es obligatorio');
-        const res = await fetch('/api/admin/tools', {
+        const res = await apiFetch('/api/admin/tools', {
           method: 'POST',
           headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify(payload),
@@ -1065,7 +1065,7 @@ export async function AdminPage() {
               isPublished: publishToggle.checked,
             };
             if (!payload.title) throw new Error('El titulo es obligatorio');
-            const res = await fetch(`/api/admin/tools/${encodeURIComponent(tool.id)}`, {
+            const res = await apiFetch(`/api/admin/tools/${encodeURIComponent(tool.id)}`, {
               method: 'PUT',
               headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
               body: JSON.stringify(payload),
@@ -1086,7 +1086,7 @@ export async function AdminPage() {
           if (!requireSecret()) return;
           remove.disabled = true;
           try {
-            const res = await fetch(`/api/admin/tools/${encodeURIComponent(tool.id)}`, {
+            const res = await apiFetch(`/api/admin/tools/${encodeURIComponent(tool.id)}`, {
               method: 'DELETE',
               headers: token ? { authorization: `Bearer ${token}` } : {},
             });
@@ -1148,7 +1148,7 @@ export async function AdminPage() {
             try {
               const headers = { 'content-type': 'application/json' };
               if (token) headers.authorization = `Bearer ${token}`;
-              const res = await fetch(`/api/admin/recovery-requests/${encodeURIComponent(req.id)}`, {
+              const res = await apiFetch(`/api/admin/recovery-requests/${encodeURIComponent(req.id)}`, {
                 method: 'PUT',
                 headers,
                 body: JSON.stringify({ status: state }),
@@ -1296,7 +1296,7 @@ export async function AdminPage() {
 
       toggleBtn.addEventListener('click', async () => {
         try {
-          const res = await fetch(`/api/admin/users/${user.id}/toggle-active`, {
+          const res = await apiFetch(`/api/admin/users/${user.id}/toggle-active`, {
             method: 'PUT',
             headers: token ? { authorization: `Bearer ${token}` } : {},
           });
@@ -1324,17 +1324,17 @@ export async function AdminPage() {
           const servicesPayload = serviceArea.value.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
 
           const [resUser, resRoles, resAccess] = await Promise.all([
-            fetch(`/api/admin/users/${user.id}`, {
+            apiFetch(`/api/admin/users/${user.id}`, {
               method: 'PUT',
               headers,
               body: JSON.stringify({ username, name: displayName, email: emailValue }),
             }),
-            fetch(`/api/admin/users/${user.id}/roles`, {
+            apiFetch(`/api/admin/users/${user.id}/roles`, {
               method: 'PUT',
               headers,
               body: JSON.stringify({ roles }),
             }),
-            fetch(`/api/admin/access-map/${user.id}`, {
+            apiFetch(`/api/admin/access-map/${user.id}`, {
               method: 'PUT',
               headers,
               body: JSON.stringify({ courses: coursesPayload, services: servicesPayload }),
@@ -1367,7 +1367,7 @@ export async function AdminPage() {
         if (!password) return;
         try {
           resetBtn.disabled = true;
-          const res = await fetch(`/api/admin/users/${user.id}/password`, {
+          const res = await apiFetch(`/api/admin/users/${user.id}/password`, {
             method: 'PUT',
             headers: buildHeaders(),
             body: JSON.stringify({ password }),
@@ -1386,7 +1386,7 @@ export async function AdminPage() {
         if (!window.confirm(`Eliminar al usuario ${user.username}? Esta accion es permanente.`)) return;
         try {
           deleteBtn.disabled = true;
-          const res = await fetch(`/api/admin/users/${user.id}`, {
+          const res = await apiFetch(`/api/admin/users/${user.id}`, {
             method: 'DELETE',
             headers: token ? { authorization: `Bearer ${token}` } : {},
           });

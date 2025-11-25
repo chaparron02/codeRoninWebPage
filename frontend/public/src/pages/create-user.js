@@ -1,4 +1,4 @@
-import { createEl, showModal, navigate } from '../lib/core.js'
+import { apiFetch, createEl, showModal, navigate } from '../lib/core.js'
 import { buildPageHero, buildSection } from '../lib/layouts.js'
 
 export async function CreateUserPage() {
@@ -52,7 +52,7 @@ export async function CreateUserPage() {
         password: iClave.value,
         adminCode: iAdminCode.value
       }
-      const res = await fetch('/api/auth/signup', {
+      const res = await apiFetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify(payload)

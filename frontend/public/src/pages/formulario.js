@@ -1,4 +1,4 @@
-import { createEl, showModal } from '../lib/core.js'
+import { apiFetch, createEl, showModal } from '../lib/core.js'
 import { buildPageHero, buildSection } from '../lib/layouts.js'
 
 export async function FormPage() {
@@ -63,7 +63,7 @@ export async function FormPage() {
     try {
       const fd = new FormData(form)
       const payload = Object.fromEntries(fd.entries())
-      const res = await fetch('/api/forms/course', {
+      const res = await apiFetch('/api/forms/course', {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify(payload),

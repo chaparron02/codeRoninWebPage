@@ -2,6 +2,56 @@
 export const $ = (sel, ctx = document) => ctx.querySelector(sel);
 export const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
+const META_API = (typeof document !== 'undefined' ? (document.querySelector('meta[name="cr-api-base"]')?.getAttribute('content') || '') : '');
+const META_MEDIA = (typeof document !== 'undefined' ? (document.querySelector('meta[name="cr-media-base"]')?.getAttribute('content') || '') : '');
+const RAW_API_BASE = (typeof window !== 'undefined' ? window.__CR_API_BASE__ : '') || META_API || '';
+const RAW_MEDIA_BASE = (typeof window !== 'undefined' ? window.__CR_MEDIA_BASE__ : '') || META_MEDIA || '';
+
+function normalizeBase(raw) {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed || trimmed.startsWith('__CR_')) return '';
+  try {
+    const u = new URL(trimmed, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const path = u.pathname.replace(/\/+$/, '');
+    const origin = u.origin === 'null' ? '' : u.origin;
+    return `${origin}${path === '/' ? '' : path}`;
+  } catch {
+    return trimmed.startsWith('/') ? trimmed.replace(/\/+$/, '') : '';
+  }
+}
+
+const API_BASE = normalizeBase(RAW_API_BASE);
+const MEDIA_BASE = normalizeBase(RAW_MEDIA_BASE);
+
+export function apiUrl(path = '') {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (!API_BASE) return cleanPath;
+  return `${API_BASE}${cleanPath}`;
+}
+
+export function mediaUrl(path = '') {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (!MEDIA_BASE) return cleanPath;
+  return `${MEDIA_BASE}${cleanPath}`;
+}
+
+export async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const headers = { accept: 'application/json', ...(options.headers || {}) };
+  const opts = { credentials: 'include', ...options, headers };
+  if (token && !opts.headers.authorization) {
+    opts.headers.authorization = `Bearer ${token}`;
+  }
+  if (opts.body && !(opts.body instanceof FormData) && !opts.headers['content-type'] && !opts.headers['Content-Type']) {
+    opts.headers['content-type'] = 'application/json';
+    if (typeof opts.body !== 'string') {
+      opts.body = JSON.stringify(opts.body);
+    }
+  }
+  const url = apiUrl(path);
+  return fetch(url, opts);
+}
+
 export function createEl(tag, opts = {}) {
   const el = document.createElement(tag);
   if (opts.className) el.className = opts.className;
@@ -44,10 +94,7 @@ export function setToken(tok) {
 
 export async function getJSON(path, fallback = []) {
   try {
-    const token = getToken();
-    const headers = { 'accept': 'application/json' };
-    if (token) headers['authorization'] = `Bearer ${token}`;
-    const res = await fetch(path, { headers, credentials: 'include' });
+    const res = await apiFetch(path);
     if (!res.ok) throw new Error('request failed');
     const ct = (res.headers.get('content-type') || '').toLowerCase();
     if (res.status === 204) return fallback;
@@ -87,7 +134,7 @@ export function toggleUserMenu(anchor) {
   const toPerfil = document.createElement('a'); toPerfil.href = '/perfil'; toPerfil.textContent = 'Perfil';
   const toLogout = document.createElement('button'); toLogout.type = 'button'; toLogout.textContent = 'Salir'; toLogout.className = 'menu-danger';
   toLogout.addEventListener('click', async () => {
-    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
+    try { await apiFetch('/api/auth/logout', { method: 'POST' }); } catch {}
     setToken('');
     closeUserMenu();
     navigate('/');

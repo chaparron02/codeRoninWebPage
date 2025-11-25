@@ -1,4 +1,4 @@
-﻿import { createEl, showModal, updateAuthNav, getJSON, getToken, navigate } from '../lib/core.js'
+import { createEl, showModal, updateAuthNav, getJSON, getToken, navigate } from '../lib/core.js'
 
 const DELETE_SECRET = 'gatito';
 const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
@@ -55,6 +55,19 @@ export async function PergaminosPage() {
     wrap.appendChild(container);
     return wrap;
   }
+
+  const hero = createEl('div', { className: 'scrolls-hero' });
+  hero.appendChild(createEl('h3', { text: 'Cuarto de pergaminos' }));
+  hero.appendChild(createEl('p', { className: 'muted', text: 'Organiza modulos, videos y PDFs para cada curso. Usa los campos de orden para mantener la narrativa de tu dojo.' }));
+  const heroBadges = createEl('div', { className: 'scrolls-badges' });
+  [
+    `Cursos activos: ${courses.length}`,
+    'Video max 200MB',
+    'PDF max 25MB',
+    'Orden configurable por modulo'
+  ].forEach(text => heroBadges.appendChild(createEl('span', { className: 'badge', text })));
+  hero.appendChild(heroBadges);
+  container.appendChild(hero);
 
   let currentCourse = '';
   let modulesCache = [];
@@ -249,7 +262,7 @@ export async function PergaminosPage() {
         const fd = new FormData();
         fd.append('file', file);
         const headers = token ? { authorization: `Bearer ${token}` } : {};
-        const up = await fetch('/api/instructor/upload/video', { method: 'POST', headers, body: fd, credentials: 'include' });
+        const up = await apiFetch('/api/instructor/upload/video', { method: 'POST', headers, body: fd });
         if (!up.ok) throw new Error('No se pudo subir el archivo');
         const data = await up.json();
         resource = { type: data.type === 'pdf' ? 'pdf' : 'video', url: data.url, name: data.name || file.name, mime: data.mime };
@@ -260,7 +273,7 @@ export async function PergaminosPage() {
         const fd = new FormData();
         fd.append('file', file);
         const headers = token ? { authorization: `Bearer ${token}` } : {};
-        const up = await fetch('/api/instructor/upload/video', { method: 'POST', headers, body: fd, credentials: 'include' });
+        const up = await apiFetch('/api/instructor/upload/video', { method: 'POST', headers, body: fd });
         if (!up.ok) throw new Error('No se pudo subir el archivo');
         const data = await up.json();
         resource = { type: 'pdf', url: data.url, name: data.name || file.name, mime: data.mime };
@@ -280,11 +293,10 @@ export async function PergaminosPage() {
       };
       const headers = { 'content-type': 'application/json', 'accept': 'application/json' };
       if (token) headers.authorization = `Bearer ${token}`;
-      const res = await fetch('/api/instructor/courses/modules', {
+      const res = await apiFetch('/api/instructor/courses/modules', {
         method: 'POST',
         headers,
-        credentials: 'include',
-        body: JSON.stringify(payload),
+                body: JSON.stringify(payload),
       });
       if (!res.ok) {
         let msg = 'No se pudo guardar el pergamino';

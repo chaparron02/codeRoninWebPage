@@ -1,4 +1,4 @@
-import { createEl, showModal, navigate, getJSON, setToken } from '../lib/core.js'
+import { apiFetch, createEl, showModal, navigate, getJSON, setToken } from '../lib/core.js'
 
 export async function LoginPage() {
   const main = createEl('main', { className: 'login-page' })
@@ -88,11 +88,10 @@ function handleLoginFlow({ form, inputUser, inputPass, submit, recoveryBtn }) {
     e.preventDefault()
     submit.disabled = true
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username: inputUser.value, password: inputPass.value }),
+                body: JSON.stringify({ username: inputUser.value, password: inputPass.value }),
       })
       if (!res.ok) throw new Error('No se pudo iniciar sesion')
       const data = await res.json()
@@ -115,7 +114,7 @@ function handleLoginFlow({ form, inputUser, inputPass, submit, recoveryBtn }) {
       return
     }
     try {
-      const res = await fetch('/api/auth/recover', {
+      const res = await apiFetch('/api/auth/recover', {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify({ username, email: email.trim(), message: details.trim() }),

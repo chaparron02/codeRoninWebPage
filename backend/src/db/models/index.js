@@ -16,16 +16,35 @@ function ensureDir(dir) {
 
 const databaseUrl = process.env.DATABASE_URL;
 const configuredDialect = (process.env.DB_DIALECT || '').toLowerCase();
+const isRender = !!process.env.RENDER; // Render inyecta RENDER=true
 let sequelize;
 
 const DEFAULT_TIMEZONE = 'Z';
 
 if (databaseUrl) {
-  const options = {
-    logging: false,
-  };
+  const options = { logging: false };
+  try {
+    const parsed = new URL(databaseUrl);
+    const isPostgres = parsed.protocol.startsWith('postgres');
+    if (isPostgres) {
+      options.dialect = 'postgres';
+      options.dialectOptions = {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false, // Render/managed DBs often use self-signed certs
+        },
+      };
+      options.pool = { max: 10, min: 0, idle: 10000 };
+    }
+  } catch {
+    // continue with defaults
+  }
   sequelize = new Sequelize(databaseUrl, options);
 } else if (!configuredDialect || configuredDialect === 'sqlite') {
+  if (isRender) {
+    // Render sin DATABASE_URL: evita escribir en disco efimero. Mejor abortar.
+    throw new Error('DATABASE_URL es obligatorio en Render (usa Postgres administrado)');
+  }
   ensureDir(DATA_DIR);
   const storage = process.env.DB_SQLITE_PATH || path.join(DATA_DIR, 'coderonin.db');
   ensureDir(path.dirname(storage));

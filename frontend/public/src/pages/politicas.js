@@ -174,6 +174,5 @@ function buildPolicyContact() {
   })
 
   section.appendChild(grid)
-  section.appendChild(createEl('a', { className: 'btn hero-primary', text: 'Enviar solicitud legal', attrs: { href: 'mailto:coderonin404@gmail.com' } }))
   return section
 }

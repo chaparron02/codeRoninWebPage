@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon backend/server.js",
     "start": "node backend/server.js",
-    "seed": "node backend/src/db/seed-run.js"
+    "seed": "node backend/src/db/seed-run.js",
+    "build": "node -e \"import{rmSync,cpSync}from'fs';import{resolve}from'path';const src=resolve('frontend','public');const dst=resolve('dist');rmSync(dst,{recursive:true,force:true});cpSync(src,dst,{recursive:true});console.log('Static build ready at',dst);\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

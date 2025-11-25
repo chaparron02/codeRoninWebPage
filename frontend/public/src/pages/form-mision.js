@@ -1,4 +1,4 @@
-﻿import { createEl, showModal } from '../lib/core.js'
+import { apiFetch, createEl, showModal } from '../lib/core.js'
 import { buildPageHero, buildSection } from '../lib/layouts.js'
 
 export async function FormMisionPage() {
@@ -93,7 +93,7 @@ export async function FormMisionPage() {
     try {
       const fd = new FormData(form)
       const payload = Object.fromEntries(fd.entries())
-      const res = await fetch('/api/forms/mission', {
+      const res = await apiFetch('/api/forms/mission', {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: JSON.stringify(payload),
