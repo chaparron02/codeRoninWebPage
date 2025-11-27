@@ -41,10 +41,10 @@ if (databaseUrl) {
   }
   sequelize = new Sequelize(databaseUrl, options);
 } else if (!configuredDialect || configuredDialect === 'sqlite') {
-  if (isRender) {
+  //if (isRender) {
     // Render sin DATABASE_URL: evita escribir en disco efimero. Mejor abortar.
-    throw new Error('DATABASE_URL es obligatorio en Render (usa Postgres administrado)');
-  }
+    //throw new Error('DATABASE_URL es obligatorio en Render (usa Postgres administrado)');
+  //}
   ensureDir(DATA_DIR);
   const storage = process.env.DB_SQLITE_PATH || path.join(DATA_DIR, 'coderonin.db');
   ensureDir(path.dirname(storage));
