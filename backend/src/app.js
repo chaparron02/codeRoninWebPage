@@ -33,7 +33,14 @@ export function createApp() {
     crossOriginResourcePolicy: { policy: 'same-site' },
     contentSecurityPolicy: false, // CSP already enforced at the frontend
   }));
-  app.use(cors());
+  app.use(cors({
+    origin: 'https://coderonin.site',
+    credentials: true,
+  }));
+  app.options('*', cors({
+    origin: 'https://coderonin.site',
+    credentials: true,
+  }));
   app.use(express.json());
   app.use(morgan('dev'));
 
