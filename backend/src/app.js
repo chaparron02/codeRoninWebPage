@@ -42,7 +42,7 @@ export function createApp() {
   // Forzar los headers CORS (por si algún middleware o proxy los cambia)
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'https://coderonin.site');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Credentials', '*');
     res.header('Vary', 'Origin');
     next();
   });
