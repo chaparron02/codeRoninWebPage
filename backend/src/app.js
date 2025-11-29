@@ -28,11 +28,8 @@ export function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
-  app.use(helmet({
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: 'same-site' },
-    contentSecurityPolicy: false, // CSP already enforced at the frontend
-  }));
+
+  // CORS: solo permitir tu frontend de GoDaddy
   app.use(cors({
     origin: 'https://coderonin.site',
     credentials: true,
@@ -41,9 +38,24 @@ export function createApp() {
     origin: 'https://coderonin.site',
     credentials: true,
   }));
+
+  // Forzar los headers CORS (por si algún middleware o proxy los cambia)
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'https://coderonin.site');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Vary', 'Origin');
+    next();
+  });
+
+  app.use(helmet({
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'same-site' },
+    contentSecurityPolicy: false, // CSP ya se aplica en el frontend
+  }));
+
   app.use(express.json());
   app.use(morgan('dev'));
-
+  
   app.use((req, res, next) => {
     const raw = req.originalUrl || req.url || '';
     try {
